@@ -441,7 +441,7 @@ int main(int argc, char **argv)
 {
 	int pos[2] = {0, 0};
 	int size[2];
-	int vis = 0;
+	int vis = 1;
 	int type;
 
 	screen_create_context(&screen_ctx, SCREEN_APPLICATION_CONTEXT);
@@ -509,16 +509,17 @@ int main(int argc, char **argv)
 					vis = 0;
 				}
 			}
+
+			if (vis) {
+				if (++pos[0] > dims[0] - barwidth) {
+					pos[0] = 0;
+				}
+				screen_set_window_property_iv(screen_bar_win, SCREEN_PROPERTY_POSITION, pos);
+				screen_flush_context(screen_ctx, SCREEN_WAIT_IDLE);
+			}
 		} while (type != SCREEN_EVENT_NONE);
 
-		if (vis) {
-			if (++pos[0] > dims[0] - barwidth) {
-				pos[0] = 0;
-			}
-			screen_set_window_property_iv(screen_bar_win, SCREEN_PROPERTY_POSITION, pos);
-			screen_flush_context(screen_ctx, SCREEN_WAIT_IDLE);
-		}
-	}
+    }
 
 
 	screen_destroy_event(screen_ev);
