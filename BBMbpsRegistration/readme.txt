@@ -1,27 +1,23 @@
-BBMBaseSampleRegistration
+BBMbpsRegistration
 
-Demonstrates how to register an application with the BlackBerry Messenger Social Platform using the
-BlackBerry Platform Services (bps) style BBM SP library.  Use this sample if you are already
-using the bps library within your application.  Otherwise I recommend using the BBMQtRegistration
-sample.  
+Demonstrates how to register an application with the BlackBerry Messenger Social Platform 
+using the bps BlackBerry Messenger Social Platform APIs.
 
-This sample is designed to easily plug into an existing application.  
-Your exising UI could be displayed within RegistrationHandler::continueToMainAppScreen() of 
-RegistrationHandler.cpp. 
 
 
 BEFORE YOU RUN THIS SAMPLE
-Edit RegistrationHandler::RegistrationHandler in RegistrationHandler.cpp and set your
-UUID (Universally unique identifier).  DO NOT USE THE EXAMPLE UUID IN THIS SAMPLE.
+Edit BbmRegistration.c in process_bbm_registration_event and set your
+UUID (Universally unique identifier).  
 
 
 Feature Summary
 
 BlackBerry Messenger Social Platform Registration
+BlackBerry Messenger Social Platform Profile
 
 Author(s)
 
-Mark Sohm
+Kateryna Khvan
 
 
 Requirements
@@ -35,7 +31,7 @@ Importing a project into the Native SDK
 From the the Sample apps page, download and extract the sample application.
 Launch the Native SDK.
 On the File menu, click Import.
-Expand General, and select Existing Projects into Workspace. Click Next.
+Expand BlackBerry, and Existing Code as BlackBerry C/C++ Makefile Project. Click Next.
 Browse to the location where you extracted the sample app, and click OK. The sample project should display in the the Projects section.
 Click Finish to import the project into your workspace.
 
