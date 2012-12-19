@@ -166,7 +166,7 @@ static void*  playerThread( void*  arg ){
 }
 
 /**
- * Thread func just calls the capture<br>
+ * Thread function just calls the capture<br>
  * arg is the circular buffer<br>
  */
 static void* captureThread( void*  arg ){
@@ -209,11 +209,10 @@ static int capture(circular_buffer_t* circular_buffer){
 	unsigned int handle;
 	audio_manager_audio_type_t *type;
 
+    //snd_pcm_open_name(&pcm_handle,"voice", SND_PCM_OPEN_CAPTURE);
 
 	//enables echo cancellation and routes audio to device earpiece
-    //snd_pcm_open_name(&pcm_handle,"/dev/snd/voicec", SND_PCM_OPEN_CAPTURE);
-	//snd_pcm_open_preferred(&pcm_handle, &card, &dev, SND_PCM_OPEN_CAPTURE);
-	audio_manager_snd_pcm_open_name(AUDIO_TYPE_VOICE, &pcm_handle, &handle, "/dev/snd/voicec", SND_PCM_OPEN_CAPTURE);
+	audio_manager_snd_pcm_open_name(AUDIO_TYPE_VOICE, &pcm_handle, &handle, "voice", SND_PCM_OPEN_CAPTURE);
 
 	snd_pcm_channel_info_t pi;
 	snd_mixer_group_t group;
@@ -366,12 +365,12 @@ static int play(circular_buffer_t* circular_buffer){
 	}*/
 
 	//Enabling AEC
-	/*if ((rtn = snd_pcm_open_name (&pcm_handle,"/dev/snd/voicep", SND_PCM_OPEN_PLAYBACK)) < 0){
+	/*if ((rtn = snd_pcm_open_name (&pcm_handle,"voice", SND_PCM_OPEN_PLAYBACK)) < 0){
 		return rtn;
 	} */
 
 	//audio routing enabled with AEC
-	if ((rtn = audio_manager_snd_pcm_open_name(AUDIO_TYPE_VOICE, &pcm_handle, &handle, "/dev/snd/voicep", SND_PCM_OPEN_PLAYBACK)) < 0){
+	if ((rtn = audio_manager_snd_pcm_open_name(AUDIO_TYPE_VOICE, &pcm_handle, &handle, "voice", SND_PCM_OPEN_PLAYBACK)) < 0){
 			return rtn;
 		}
 
