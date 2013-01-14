@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+
+
 #include <ctype.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -39,6 +41,12 @@
 #include <pthread.h>
 
 
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <errno.h>
+#include <gulliver.h>
+
 // Constants for clearer init code
 // Jitter buffer size.
 static const int JITTER_BUFFER_NUMBER_FRAMES = 20;
@@ -49,6 +57,12 @@ static const int VOIP_SAMPLE_RATE = 16000;
 static const char SILENCE = 0xFF;
 pthread_t capturethread;
 pthread_t playerthread;
+snd_pcm_t *pcm_handle_c;
+snd_pcm_t *pcm_handle_p;
+unsigned int audio_manager_handle_c;
+unsigned int audio_manager_handle_p;
+int frame_size_c;
+int frame_size_p;
 
 /**
  * Encapsulation of a circular buffer
@@ -148,6 +162,8 @@ static bool readFromCircularBuffer(circular_buffer_t* circular_buffer,char buffe
 // Forward declarations
 static int capture(circular_buffer_t* circular_buffer);
 static int play(circular_buffer_t* circular_buffer);
+void capturesetup();
+void playsetup();
 
 // Flag to stop the recorder and capture
 static bool g_execute_audio = true;
@@ -178,11 +194,14 @@ static void* captureThread( void*  arg ){
  * Create the threads passing the circular buffer as the arg<br>
  * The startup not synchronized but not important as the jitter buffer is ample size<br>
  */
+
 void startPcmAudio(){
 	g_circular_buffer = createCircularBuffer();
 	pthread_attr_t attr;
 	pthread_attr_init( &attr );
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED );
+	capturesetup();
+	playsetup();
 	pthread_create(&capturethread, &attr, &captureThread, g_circular_buffer);
 	pthread_create(&playerthread,&attr,&playerThread,g_circular_buffer);
 }
@@ -198,21 +217,25 @@ void stopPcmAudio(){
 	destroyCircularBuffer(g_circular_buffer);
 }
 
-/**
- * Set up capture based on the audio sample waverec except we use VoIP parameters
- */
-static int capture(circular_buffer_t* circular_buffer){
+
+void capturesetup(){
 
 	snd_pcm_channel_setup_t setup;
-	snd_pcm_t *pcm_handle;
+	//snd_pcm_t *pcm_handle_c;
 	int dev = 0;
-	unsigned int handle;
+	//unsigned int handle;
 	audio_manager_audio_type_t *type;
+	int ret;
 
-    //snd_pcm_open_name(&pcm_handle,"voice", SND_PCM_OPEN_CAPTURE);
+    //snd_pcm_open_name(&pcm_handle_c,"voice", SND_PCM_OPEN_CAPTURE);
 
 	//enables echo cancellation and routes audio to device earpiece
-	audio_manager_snd_pcm_open_name(AUDIO_TYPE_VOICE, &pcm_handle, &handle, "voice", SND_PCM_OPEN_CAPTURE);
+	audio_manager_snd_pcm_open_name(AUDIO_TYPE_VIDEO_CHAT, &pcm_handle_c, &audio_manager_handle_c, "voice", SND_PCM_OPEN_CAPTURE);
+
+     if ((ret = snd_pcm_plugin_set_disable (pcm_handle_c, PLUGIN_DISABLE_MMAP)) < 0) {
+	        fprintf (stderr, "snd_pcm_plugin_set_disable failed: %s\n", snd_strerror (ret));
+	        return;
+     }
 
 	snd_pcm_channel_info_t pi;
 	snd_mixer_group_t group;
@@ -222,10 +245,10 @@ static int capture(circular_buffer_t* circular_buffer){
 	memset (&pi, 0, sizeof (pi));
 	pi.channel = SND_PCM_CHANNEL_CAPTURE;
 	int rtn = -1;
-	if ((rtn = snd_pcm_plugin_info (pcm_handle, &pi)) < 0)
+	if ((rtn = snd_pcm_plugin_info (pcm_handle_c, &pi)) < 0)
 	{
 		fprintf (stderr, "snd_pcm_plugin_info failed: %s\n", snd_strerror (rtn));
-		return -1;
+		return;
 	}
 
 	fprintf(stderr,"CAPTURE Minimum Rate = %d\n",pi.min_rate);
@@ -249,9 +272,9 @@ static int capture(circular_buffer_t* circular_buffer){
 	pp.format.voices = 1;
 	pp.format.format = SND_PCM_SFMT_S16_LE;
 	// make the request
-	if ((rtn = snd_pcm_plugin_params (pcm_handle, &pp)) < 0){
+	if ((rtn = snd_pcm_plugin_params (pcm_handle_c, &pp)) < 0){
 		fprintf (stderr, "snd_pcm_plugin_params failed: %s\n", snd_strerror (rtn));
-		return -1;
+		return;
 	}
 
 	// Again based on the sample
@@ -259,15 +282,15 @@ static int capture(circular_buffer_t* circular_buffer){
 	memset (&group, 0, sizeof (group));
 	setup.channel = SND_PCM_CHANNEL_CAPTURE;
 	setup.mixer_gid = &group.gid;
-	if ((rtn = snd_pcm_plugin_setup (pcm_handle, &setup)) < 0){
+	if ((rtn = snd_pcm_plugin_setup (pcm_handle_c, &setup)) < 0){
 		fprintf (stderr, "snd_pcm_plugin_setup failed: %s\n", snd_strerror (rtn));
-		return -1;
+		return;
 	}
 	int  card = setup.mixer_card;
 	// On the simulator at least, our requested capabilities are accepted.
 	fprintf (stderr,"CAPTURE Format %s card = %d\n", snd_pcm_get_format_name (setup.format.format),card);
 	fprintf (stderr,"CAPTURE Rate %d \n", setup.format.rate);
-	int frame_size = setup.buf.block.frag_size;
+	frame_size_c = setup.buf.block.frag_size;
 
 	if (group.gid.name[0] == 0){
 		printf ("Mixer Pcm Group [%s] Not Set \n", group.gid.name);
@@ -277,109 +300,58 @@ static int capture(circular_buffer_t* circular_buffer){
 	}
 
 	// frag_size should be 160
-	frame_size = setup.buf.block.frag_size;
-	fprintf (stderr, "CAPTURE frame_size = %d\n", frame_size);
+	frame_size_c = setup.buf.block.frag_size;
+	fprintf (stderr, "CAPTURE frame_size = %d\n", frame_size_c);
 
 	// Sample calls prepare()
-	if ((rtn = snd_pcm_plugin_prepare (pcm_handle, SND_PCM_CHANNEL_CAPTURE)) < 0){
+	if ((rtn = snd_pcm_plugin_prepare (pcm_handle_c, SND_PCM_CHANNEL_CAPTURE)) < 0){
 		fprintf (stderr, "snd_pcm_plugin_prepare failed: %s\n", snd_strerror (rtn));
 	}
 
-	// Re-usable buffer for capture
-	char   *record_buffer;
-	record_buffer = malloc (frame_size);
 
-	// Some diagnostic variables
-	int failed = 0;
-	int totalRead = 0;
-	snd_pcm_channel_status_t status;
-
-	// Loop until stopAudio() flags us
-	while(g_execute_audio){
-		// This blocking read appears to take much longer than 20ms on the simulator
-		// but it never fails and always returns 160 bytes
-		int read = snd_pcm_plugin_read(pcm_handle, record_buffer, frame_size);
-		if(read <0 || read != frame_size){
-			failed++;
-
-			if (snd_pcm_plugin_status (pcm_handle, &status) < 0){
-			                    fprintf (stderr, "overrun: capture channel status error\n");
-			                    exit (1);
-			   }
-
-			if (status.status == SND_PCM_STATUS_READY || status.status == SND_PCM_STATUS_OVERRUN) {
-			      if (snd_pcm_plugin_prepare (pcm_handle, SND_PCM_CHANNEL_CAPTURE) < 0)
-			          {
-			              fprintf (stderr, "overrun: capture channel prepare error\n");
-			              exit (1);
-			          }
-			  }
-
-
-
-
-		}else{
-			totalRead += read;
-		}
-		capture_ready = true;
-		// On simulator always room in the circular buffer
-		if(!writeToCircularBuffer(circular_buffer,record_buffer,frame_size)){
-			failed++;
-		}
-	}
-
-	(void)snd_pcm_plugin_flush (pcm_handle, SND_PCM_CHANNEL_CAPTURE);
-	//(void)snd_mixer_close (mixer_handle);
-	(void)snd_pcm_close (pcm_handle);
-
-	// IMPORTANT NB: You only get failed on capture if the play loop has exited hence the circular buffer fills. This is with the simulator
-	fprintf (stderr, "CAPTURE TOTAL Bytes read = %d failed = %d\n\n\n",totalRead,failed);
-	free(record_buffer);
-
-	return 0;
 }
 
-/**
- * setup play based on the audio sample wave
- */
-static int play(circular_buffer_t* circular_buffer){
+void playsetup(){
 
 	snd_pcm_channel_setup_t setup;
-	snd_pcm_t *pcm_handle;
-
-
+	//snd_pcm_t *pcm_handle_p;
 
 	//Enabling Echo cancellor
 	int     dev = 0;
 
 	int rtn;
+	int ret;
 	snd_pcm_channel_info_t pi;
 	snd_mixer_group_t group;
 	snd_pcm_channel_params_t pp;
-	unsigned int handle;
 	audio_manager_audio_type_t *type;
 
-	// No AEC
-	/*if ((rtn = snd_pcm_open_preferred (&pcm_handle, &card, &dev, SND_PCM_OPEN_PLAYBACK)) < 0){
-		return rtn;
-	}*/
-
-	//Enabling AEC
-	/*if ((rtn = snd_pcm_open_name (&pcm_handle,"voice", SND_PCM_OPEN_PLAYBACK)) < 0){
-		return rtn;
-	} */
-
 	//audio routing enabled with AEC
-	if ((rtn = audio_manager_snd_pcm_open_name(AUDIO_TYPE_VOICE, &pcm_handle, &handle, "voice", SND_PCM_OPEN_PLAYBACK)) < 0){
-			return rtn;
+	if ((rtn = audio_manager_snd_pcm_open_name(AUDIO_TYPE_VIDEO_CHAT, &pcm_handle_p, &audio_manager_handle_p, "voice", SND_PCM_OPEN_PLAYBACK)) < 0){
+			return;
 		}
+
+    if ((ret = snd_pcm_plugin_set_disable (pcm_handle_p, PLUGIN_DISABLE_MMAP)) < 0) {
+	        fprintf (stderr, "snd_pcm_plugin_set_disable failed: %s\n", snd_strerror (ret));
+	        return;
+    }
+
+    int err = audio_manager_set_handle_type(audio_manager_handle_p, AUDIO_TYPE_VIDEO_CHAT, AUDIO_DEVICE_HANDSET , AUDIO_DEVICE_HANDSET);
+    if (err==0) {
+          err = audio_manager_set_handle_routing_conditions(audio_manager_handle_p, SETTINGS_RESET_ON_DEVICE_CONNECTION);
+          if(err != 0){
+        	  fprintf (stderr,"audio_manager_set_handle_routing_conditions() err = %d",err);
+          }
+    }else{
+    	fprintf (stderr,"audio_manager_set_handle_type() err = %d",err);
+    }
 
 	memset (&pi, 0, sizeof (pi));
 	pi.channel = SND_PCM_CHANNEL_PLAYBACK;
-	if ((rtn = snd_pcm_plugin_info (pcm_handle, &pi)) < 0)
+	if ((rtn = snd_pcm_plugin_info (pcm_handle_p, &pi)) < 0)
 	{
 		fprintf (stderr, "snd_pcm_plugin_info failed: %s\n", snd_strerror (rtn));
-		return -1;
+		return;
 	}
 
 	fprintf(stderr,"PLAY Minimum Rate = %d\n",pi.min_rate);
@@ -396,7 +368,7 @@ static int play(circular_buffer_t* circular_buffer){
 	pp.stop_mode = SND_PCM_STOP_ROLLOVER;
 	pp.buf.block.frag_size = PREFERRED_FRAME_SIZE;
 	// Increasing this internal buffer count delays write failure in the loop
-	pp.buf.block.frags_max = 4;
+	pp.buf.block.frags_max = 3;
 	pp.buf.block.frags_min = 1;
 	pp.format.interleave = 1;
 	pp.format.rate = VOIP_SAMPLE_RATE;
@@ -404,26 +376,26 @@ static int play(circular_buffer_t* circular_buffer){
 	pp.format.format = SND_PCM_SFMT_S16_LE;
 
 	// Make the calls as per the wave sample
-	if ((rtn = snd_pcm_plugin_params (pcm_handle, &pp)) < 0){
+	if ((rtn = snd_pcm_plugin_params (pcm_handle_p, &pp)) < 0){
 		fprintf (stderr, "snd_pcm_plugin_params failed: %s\n", snd_strerror (rtn));
-		return -1;
+		return;
 	}
 
 	memset (&setup, 0, sizeof (setup));
 	memset (&group, 0, sizeof (group));
 	setup.channel = SND_PCM_CHANNEL_PLAYBACK;
 	setup.mixer_gid = &group.gid;
-	if ((rtn = snd_pcm_plugin_setup (pcm_handle, &setup)) < 0)
+	if ((rtn = snd_pcm_plugin_setup (pcm_handle_p, &setup)) < 0)
 	{
 		fprintf (stderr, "snd_pcm_plugin_setup failed: %s\n", snd_strerror (rtn));
-		return -1;
+		return;
 	}
 	int card = setup.mixer_card;
 
 	fprintf (stderr,"PLAY Format %s card = %d\n", snd_pcm_get_format_name (setup.format.format),card);
 	fprintf (stderr,"PLAY frame_size %d \n", setup.buf.block.frag_size);
 	fprintf (stderr,"PLAY Rate %d \n", setup.format.rate);
-	int frame_size = setup.buf.block.frag_size;
+	frame_size_p = setup.buf.block.frag_size;
 
 	if (group.gid.name[0] == 0)
 	{
@@ -433,20 +405,86 @@ static int play(circular_buffer_t* circular_buffer){
 	printf ("Mixer Pcm Group [%s]\n", group.gid.name);
 
 
-	if ((rtn = snd_pcm_plugin_prepare (pcm_handle, SND_PCM_CHANNEL_PLAYBACK)) < 0)
+	if ((rtn = snd_pcm_plugin_prepare (pcm_handle_p, SND_PCM_CHANNEL_PLAYBACK)) < 0)
 		fprintf (stderr, "snd_pcm_plugin_prepare failed: %s\n", snd_strerror (rtn));
 
 
+}
 
+/**
+ * Set up capture based on the audio sample waverec except we use VoIP parameters
+ */
+static int capture(circular_buffer_t* circular_buffer){
+
+
+	// Re-usable buffer for capture
+	char   *record_buffer;
+	record_buffer = malloc (frame_size_c);
+
+	// Some diagnostic variables
+	int failed = 0;
+	int totalRead = 0;
+	snd_pcm_channel_status_t status;
+
+	// Loop until stopAudio() flags us
+	while(g_execute_audio){
+		// This blocking read appears to take much longer than 20ms on the simulator
+		// but it never fails and always returns 160 bytes
+		int read = snd_pcm_plugin_read(pcm_handle_c, record_buffer, frame_size_c);
+		if(read <0 || read != frame_size_c){
+			failed++;
+
+
+			if (snd_pcm_plugin_status (pcm_handle_c, &status) < 0){
+			                    fprintf (stderr, "overrun: capture channel status error \n");
+			                    exit (1);
+			   }
+
+			if (status.status == SND_PCM_STATUS_READY || status.status == SND_PCM_STATUS_OVERRUN) {
+			      if (snd_pcm_plugin_prepare (pcm_handle_c, SND_PCM_CHANNEL_CAPTURE) < 0)
+			          {
+			              fprintf (stderr, "overrun: capture channel prepare error\n");
+			              exit (1);
+			          }
+			  }
+
+
+
+
+		}else{
+			totalRead += read;
+		}
+		capture_ready = true;
+		// On simulator always room in the circular buffer
+		if(!writeToCircularBuffer(circular_buffer,record_buffer,frame_size_c)){
+			failed++;
+		}
+	}
+
+	(void)snd_pcm_plugin_flush (pcm_handle_c, SND_PCM_CHANNEL_CAPTURE);
+	//(void)snd_mixer_close (mixer_handle);
+	(void)snd_pcm_close (pcm_handle_c);
+	audio_manager_free_handle(audio_manager_handle_c);
+	// IMPORTANT NB: You only get failed on capture if the play loop has exited hence the circular buffer fills. This is with the simulator
+	fprintf (stderr, "CAPTURE TOTAL Bytes read = %d failed = %d\n\n\n",totalRead,failed);
+	free(record_buffer);
+
+	return 0;
+}
+
+/**
+ * setup play based on the audio sample wave
+ */
+static int play(circular_buffer_t* circular_buffer){
 
 	// If there's nothing in the circular buffer play the sound of silence
 	// In the real world you may well play the last frame you received. There are algorithms DSP experts know about apparently
-	char* silence_buffer = malloc(frame_size);
-	memset(silence_buffer,SILENCE,frame_size);
+	char* silence_buffer = malloc(frame_size_p);
+	memset(silence_buffer,SILENCE,frame_size_p);
 
 	// Data read from the circular buffer
-	char* play_buffer = malloc(frame_size);
-	memset(play_buffer,0,frame_size);
+	char* play_buffer = malloc(frame_size_p);
+	memset(play_buffer,0,frame_size_p);
 
 	// Diagnostics
 	int total_written = 0;
@@ -460,16 +498,16 @@ static int play(circular_buffer_t* circular_buffer){
 		// returns true only if there is data to satisfy frame_size
 		if(!capture_ready){
 			++capture_not_ready;
-			written = snd_pcm_plugin_write(pcm_handle,play_buffer,PREFERRED_FRAME_SIZE);
+			written = snd_pcm_plugin_write(pcm_handle_p,play_buffer,PREFERRED_FRAME_SIZE);
 			if(written < 0 || written != PREFERRED_FRAME_SIZE){
-				fprintf(stderr,"Player exit 1 written = %d size = %d\n",written,frame_size);
-				if (snd_pcm_plugin_status (pcm_handle, &status) < 0) {
+				fprintf(stderr,"Player exit 1 written = %d size = %d\n",written,frame_size_p);
+				if (snd_pcm_plugin_status (pcm_handle_p, &status) < 0) {
 									fprintf (stderr, "underrun: playback channel status error\n");
 									exit (1);
 				}
 
 				if (status.status == SND_PCM_STATUS_READY || status.status == SND_PCM_STATUS_UNDERRUN){
-									if (snd_pcm_plugin_prepare (pcm_handle, SND_PCM_CHANNEL_PLAYBACK) < 0)
+									if (snd_pcm_plugin_prepare (pcm_handle_p, SND_PCM_CHANNEL_PLAYBACK) < 0)
 									{
 										fprintf (stderr, "underrun: playback channel prepare error\n");
 										exit (1);
@@ -480,16 +518,16 @@ static int play(circular_buffer_t* circular_buffer){
 			total_written += written;
 
 		}else if(readFromCircularBuffer(circular_buffer,play_buffer,PREFERRED_FRAME_SIZE)){
-			written = snd_pcm_plugin_write(pcm_handle,play_buffer,PREFERRED_FRAME_SIZE);
+			written = snd_pcm_plugin_write(pcm_handle_p,play_buffer,PREFERRED_FRAME_SIZE);
 			if(written < 0 || written != PREFERRED_FRAME_SIZE){
-				fprintf(stderr,"Player exit 2 written = %d size = %d\n",written,frame_size);
-				if (snd_pcm_plugin_status (pcm_handle, &status) < 0) {
+				fprintf(stderr,"Player exit 2 written = %d size = %d\n",written,frame_size_p);
+				if (snd_pcm_plugin_status (pcm_handle_p, &status) < 0) {
 									fprintf (stderr, "underrun: playback channel status error\n");
 									exit (1);
 				}
 
 				if (status.status == SND_PCM_STATUS_READY || status.status == SND_PCM_STATUS_UNDERRUN){
-									if (snd_pcm_plugin_prepare (pcm_handle, SND_PCM_CHANNEL_PLAYBACK) < 0)
+									if (snd_pcm_plugin_prepare (pcm_handle_p, SND_PCM_CHANNEL_PLAYBACK) < 0)
 									{
 										fprintf (stderr, "underrun: playback channel prepare error\n");
 										exit (1);
@@ -504,18 +542,19 @@ static int play(circular_buffer_t* circular_buffer){
 				// You would expect the jitter buffer to be possibly empty at startup because threads are not synchronized
 				// increasing the frags_max reduces the occurrences of failure here
 				// On the simulator it always fails written = 0 presumably meaning an overrun
-				written = snd_pcm_plugin_write(pcm_handle,silence_buffer,PREFERRED_FRAME_SIZE);
+				written = snd_pcm_plugin_write(pcm_handle_p,silence_buffer,PREFERRED_FRAME_SIZE);
 				if(written < 0 || written != PREFERRED_FRAME_SIZE){
-					fprintf(stderr,"Player exit 3 written = %d size = %d\n",written,frame_size);
-					if (snd_pcm_plugin_status (pcm_handle, &status) < 0) {
+					fprintf(stderr,"Player exit 3 written = %d size = %d\n",written,frame_size_p);
+					if (snd_pcm_plugin_status (pcm_handle_p, &status) < 0) {
 										fprintf (stderr, "underrun: playback channel status error\n");
 										exit (1);
 					}
 
 					if (status.status == SND_PCM_STATUS_READY || status.status == SND_PCM_STATUS_UNDERRUN){
-										if (snd_pcm_plugin_prepare (pcm_handle, SND_PCM_CHANNEL_PLAYBACK) < 0)
+										if (snd_pcm_plugin_prepare (pcm_handle_p, SND_PCM_CHANNEL_PLAYBACK) < 0)
 										{
 											fprintf (stderr, "underrun: playback channel prepare error\n");
+
 											exit (1);
 										}
 					}
@@ -526,9 +565,10 @@ static int play(circular_buffer_t* circular_buffer){
 		}
 	}
 
-	(void)snd_pcm_plugin_flush (pcm_handle, SND_PCM_CHANNEL_PLAYBACK);
+	(void)snd_pcm_plugin_flush (pcm_handle_p, SND_PCM_CHANNEL_PLAYBACK);
 	//(void)snd_mixer_close (mixer_handle);
-	(void)snd_pcm_close (pcm_handle);
+	(void)snd_pcm_close (pcm_handle_p);
+	audio_manager_free_handle(audio_manager_handle_p);
 
 	free(play_buffer);
 	free(silence_buffer);
