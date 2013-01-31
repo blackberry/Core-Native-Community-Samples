@@ -1,0 +1,40 @@
+RotateText - draw text at any angle using OpenGL 2.0
+
+========================================================================
+Sample Description:
+
+ The RotateText sample is an application that shows how to render 
+ any text using OpenGL (feature many times requested at forums).
+ Basically the app adds new function render_text_angle() to bbutil.c.
+
+ When you run the application, you will see rotating text.
+
+ Feature summary
+ - Initializing and rendering to OpenGL 2.0 
+ - Drawing text at any angle
+
+========================================================================
+Requirements:
+
+ - BlackBerry Native SDK for Tablet OS 2.0 or later
+ - One of the following:
+   - BlackBerry PlayBook tablet running BlackBerry Tablet OS 2.0 or later
+   - BlackBerry Tablet Simulator 2.0 or later
+   - BlackBerry10 Device Alpha
+   - BlackBerry10 Simulator
+
+========================================================================
+Importing a project into the Native SDK:
+
+ 1. File->New->Blackberry Tablet OS C/C++ Project
+ 2. In 'Project name' field type in 'RotateTexxt'. Press Next.
+ 3. Select 'Language:' C, 'Build Style:' Managed, 'Project Type:' Empty Application.
+    Press 'Finish'.
+ 4. Right click on this Project's src folder in Project Explorer and choose Import...
+ 5. Choose 'File system' and add files main.c, bbutil_bg.c, bbutil_bg.h from this repository. Hit Finish.
+ 6. Right click on this Project in Project Explorer and choose Properties.
+ 7. In 'Configuration:' choose preferable configuration (Simulator- or Device-Debug).
+ 8. Under C/C++ Build->Settings->QCC Compiler->Defines (-D) add USING_GL20 
+ 8. Under C/C++ Build->Settings->QCC Linker->Libraries add following libraries in
+    'Libraries (-l)' section: bps, screen, EGL, GLESv2, freetype, png, m. Click OK.
+ 9. Build and deploy.
