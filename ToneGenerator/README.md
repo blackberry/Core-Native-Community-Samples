@@ -15,5 +15,5 @@ To check the Samples Catalog, visit:
 Samples Catalog (http://blackberry.github.com/samples)
 
 For more information about Native development, visit:
-The Native microsite (http://developers.blackberry.com/native)
+The Native microsite (http://developer.blackberry.com/native)
 
