@@ -23,7 +23,7 @@ void write_user_profile_data();
 /*
  * Updates the users BBM SP profile message.
  */
-void write_profile_personal_message(bbmsp_profile_t*);
+void write_profile_personal_message();
 
 /*
  * Updates the users BBM SP status message.
@@ -33,7 +33,7 @@ void write_profile_status_message(bbmsp_profile_t*);
 /*
  * Updates the users BBM SP avatar image.
  */
-void write_profile_avatar(bbmsp_profile_t*);
+void write_profile_avatar();
 
 
 #endif /* WRITEUSERPROFILE_H_ */

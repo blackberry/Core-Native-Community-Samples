@@ -23,7 +23,7 @@
 #include <unistd.h>
 #include <string.h>
 
-void write_profile_personal_message(bbmsp_profile_t* m_profile)
+void write_profile_personal_message()
 {
 	char message[46] = "Updated by the BBMSP bps User Profile sample!";
 	if (BBMSP_FAILURE == bbmsp_set_user_profile_personal_message(message))
@@ -59,7 +59,7 @@ void write_profile_status_message(bbmsp_profile_t* m_profile)
 	}
 }
 
-int write_profile_avatar(bbmsp_profile_t* m_profile)
+int write_profile_avatar()
 {
 	//Image Source: http://openclipart.org/detail/3320/earth-by-barretr
 	//Max image width 333;
@@ -158,9 +158,9 @@ void write_user_profile_data()
 	// Populate the profile object.
 	bbmsp_get_user_profile(m_profile);
 
-	write_profile_personal_message(m_profile);
+	write_profile_personal_message();
 	write_profile_status_message(m_profile);
-	write_profile_avatar(m_profile);
+	write_profile_avatar();
 
 	fflush(stdout);
 }
