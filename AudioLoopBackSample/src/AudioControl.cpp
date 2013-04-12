@@ -18,18 +18,33 @@
 
 #include "AudioControl.hpp"
 #include <audio/audio_manager_routing.h>
+#include <bb/system/phone/Phone>
 #include <QDebug>
 #include <stdio.h>
+#include <bb/device/CellularNetworkInfo>
+#include <bb/device/CellularRadioInfo>
 
 extern void startPcmAudio();
 extern void stopPcmAudio();
 extern void toggleSpeaker(bool enable);
+
+using namespace bb::system::phone;
+using namespace bb::device;
+
 
 AudioControl::AudioControl(QObject* parent) : QObject(parent)
 	, m_audioRunning(false)
 	, m_speakerOn(false)
 	, m_dtmfAudioManager(0)
 {
+	Phone* phone = new Phone(this);
+	qDebug() << "###PHONE Entering2 = ";
+	bool success = connect(phone,SIGNAL(callUpdated(const bb::system::phone::Call &)),SLOT(callUpdated(const bb::system::phone::Call &)));
+
+	Q_ASSERT(success);
+	qDebug() << "###PHONE Listener Status = " << success;
+	qDebug() << "###PHONE Lines = " << phone->lines().size();
+
 }
 
 AudioControl::~AudioControl()
@@ -70,7 +85,7 @@ void AudioControl::releaseAudioManagerHandle()
 	if(m_dtmfAudioManager != 0){
 		int ret = audio_manager_free_handle(m_dtmfAudioManager);
 		if(ret != 0){
-			qDebug() << "AudioControl::releaseHandle() = " << ret;
+			qDebug() << "###AudioControl::releaseHandle() = " << ret;
 		}
 		m_dtmfAudioManager = 0;
 	}
@@ -87,13 +102,13 @@ void AudioControl::lazyInitializDtmfPlayer()
 	if(m_dtmfAudioManager == 0){
 		int ret = audio_manager_get_handle(AUDIO_TYPE_VOICE_TONES,0,true,&m_dtmfAudioManager);
 		if(ret != 0){
-			qDebug() << "AudioControl::audioManagerHandle() = " << ret;
+			qDebug() << "###AudioControl::audioManagerHandle() = " << ret;
 		}
 		ret = audio_manager_set_handle_routing_conditions(
 				m_dtmfAudioManager, SETTINGS_RESET_ON_DEVICE_DISCONNECTION | SETTINGS_RESET_ON_DEVICE_CONNECTION);
 
 		if(ret != 0){
-			qDebug() << "AudioControl::audioManagerHandle() = " << ret;
+			qDebug() << "###AudioControl::audioManagerHandle() = " << ret;
 		}
 		m_mediaPlayer.setSourceUrl(QUrl("asset:///DTMFG.WAV"));
 		m_mediaPlayer.setAudioManagerHandle(m_dtmfAudioManager);
@@ -103,4 +118,28 @@ void AudioControl::lazyInitializDtmfPlayer()
 void AudioControl::dtmfKeyUp()
 {
 	m_mediaPlayer.stop();
+}
+
+void AudioControl::callDisconnectedDeferred(){
+	startPcmAudio();
+	m_audioRunning = !m_audioRunning;
+	emit audioRunningSignal(m_audioRunning);
+}
+
+void AudioControl::callUpdated (const Call& call)
+{
+	if(m_audioRunning){
+		if(call.callState() == 1 || call.callState() == 2){
+			stopPcmAudio();
+			m_audioRunning = !m_audioRunning;
+			emit audioRunningSignal(m_audioRunning);
+		}
+
+	}else{
+		if(call.callState() == 5){
+			  QTimer::singleShot(100,this,SLOT(callDisconnectedDeferred()));
+			//callDisconnectedDeferred();
+		}
+	}
+	//qDebug() << "###AudioControl::callUpdated() = " << call.callState();
 }
