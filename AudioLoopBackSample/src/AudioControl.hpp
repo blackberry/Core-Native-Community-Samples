@@ -20,6 +20,7 @@
 #define AUDIOCONTROL_HPP_
 
 #include <bb/multimedia/MediaPlayer>
+#include <bb/system/phone/Call>
 #include <QObject>
 #include <QVariant>
 
@@ -38,6 +39,8 @@ public slots:
 	void toggleAudioOnOff();
 	void dtmfKeyDown();
 	void dtmfKeyUp();
+	void callUpdated (const bb::system::phone::Call &call);
+	void callDisconnectedDeferred ();
 signals:
 	void audioRunningSignal(bool);
 	void speakerOnSignal(bool);

@@ -65,6 +65,7 @@ static const char SILENCE = 0xFF;
 // Globals (g_xx)
 static pthread_t g_capturethread;
 static pthread_t g_playerthread;
+static pthread_attr_t attr_p;
 static snd_pcm_t *g_pcm_handle_c;
 static snd_pcm_t *g_pcm_handle_p;
 static unsigned int g_audio_manager_handle_c;
@@ -214,8 +215,20 @@ void startPcmAudio() {
     capturesetup();
     playsetup();
     toggleSpeaker(false); // set playback device = headset
+
+    int policy;
+    struct sched_param param;
+    pthread_attr_init (&attr_p);
+    pthread_attr_setdetachstate (&attr_p, PTHREAD_CREATE_JOINABLE);
+    pthread_attr_setinheritsched (&attr_p, PTHREAD_EXPLICIT_SCHED);
+    pthread_getschedparam (pthread_self (), &policy, &param);
+    param.sched_priority=12;
+    pthread_attr_setschedparam (&attr_p, &param);
+    pthread_attr_setschedpolicy (&attr_p, SCHED_RR);
+
+
     pthread_create(&g_capturethread,NULL, &captureThread, g_circular_buffer);
-    pthread_create(&g_playerthread,NULL,&playerThread,g_circular_buffer);
+    pthread_create(&g_playerthread,&attr_p,&playerThread,g_circular_buffer);
     fprintf(stderr,"StartPCMAudio ****************: EXIT \n");
 }
 
@@ -292,11 +305,12 @@ static void capturesetup() {
 	// Blocking read
 	pp.mode = SND_PCM_MODE_BLOCK;
 	pp.channel = SND_PCM_CHANNEL_CAPTURE;
-	pp.start_mode = SND_PCM_START_DATA;
+	//pp.start_mode = SND_PCM_START_DATA;
 	// Auto-recover from errors
 	pp.stop_mode = SND_PCM_STOP_ROLLOVER;
+	pp.start_mode = SND_PCM_START_FULL;
 	pp.buf.block.frag_size = PREFERRED_FRAME_SIZE;
-	pp.buf.block.frags_max = 1;
+	pp.buf.block.frags_max = 5;
 	pp.buf.block.frags_min = 1;
 	pp.format.interleave = 1;
 	pp.format.rate = VOIP_SAMPLE_RATE;
@@ -304,7 +318,7 @@ static void capturesetup() {
 	pp.format.format = SND_PCM_SFMT_S16_LE;
 	// make the request
 	if ((ret = snd_pcm_plugin_params(g_pcm_handle_c, &pp)) < 0) {
-		fprintf(stderr, "snd_pcm_plugin_params failed: %s\n", snd_strerror (ret));
+		fprintf(stderr, "ca snd_pcm_plugin_params failed: %s\n", snd_strerror (ret));
 		return;
 	}
 
@@ -329,7 +343,7 @@ static void capturesetup() {
 		printf("Mixer Pcm Group [%s]\n", group.gid.name);
 	}
 
-	// frag_size should be 160
+
 	g_frame_size_c = setup.buf.block.frag_size;
 	fprintf(stderr, "CAPTURE frame_size = %d\n", g_frame_size_c);
 
@@ -383,8 +397,9 @@ static void playsetup() {
 	// On simulator frag_size is always negotiated to 170
 	pp.mode = SND_PCM_MODE_BLOCK;
 	pp.channel = SND_PCM_CHANNEL_PLAYBACK;
-	pp.start_mode = SND_PCM_START_DATA;
+	//pp.start_mode = SND_PCM_START_DATA;
 	pp.stop_mode = SND_PCM_STOP_ROLLOVER;
+	pp.start_mode = SND_PCM_START_FULL;
 	pp.buf.block.frag_size = PREFERRED_FRAME_SIZE;
 	// Increasing this internal buffer count delays write failure in the loop
 	pp.buf.block.frags_max = 3;
@@ -394,9 +409,12 @@ static void playsetup() {
 	pp.format.voices = 1;
 	pp.format.format = SND_PCM_SFMT_S16_LE;
 
+
+
+
 	// Make the calls as per the wave sample
 	if ((ret = snd_pcm_plugin_params(g_pcm_handle_p, &pp)) < 0) {
-		fprintf(stderr, "snd_pcm_plugin_params failed: %s\n", snd_strerror (ret));
+		fprintf(stderr, "pb snd_pcm_plugin_params failed: %s\n", snd_strerror (ret));
 		return;
 	}
 
@@ -525,17 +543,17 @@ static int play(circular_buffer_t* circular_buffer) {
 		if (!capture_ready) {
 			++capture_not_ready;
 			written = snd_pcm_plugin_write(g_pcm_handle_p, play_buffer,
-					PREFERRED_FRAME_SIZE);
-			if (written < 0 || written != PREFERRED_FRAME_SIZE) {
+					g_frame_size_p);
+			if (written < 0 || written != g_frame_size_p) {
 				fprintf(stderr,"PLAY RESET 1\n");
 				resetPlay();
 			}
 			total_written += written;
 		} else if (readFromCircularBuffer(circular_buffer, play_buffer,
-				PREFERRED_FRAME_SIZE)) {
+				g_frame_size_p)) {
 			written = snd_pcm_plugin_write(g_pcm_handle_p, play_buffer,
-					PREFERRED_FRAME_SIZE);
-			if (written < 0 || written != PREFERRED_FRAME_SIZE) {
+					g_frame_size_p);
+			if (written < 0 || written != g_frame_size_p) {
 				fprintf(stderr,"PLAY RESET 2\n");
 				resetPlay();
 			}
@@ -545,8 +563,8 @@ static int play(circular_buffer_t* circular_buffer) {
 			// increasing the frags_max reduces the occurrences of failure here
 			// On the simulator it always fails written = 0 presumably meaning an overrun
 			written = snd_pcm_plugin_write(g_pcm_handle_p, silence_buffer,
-					PREFERRED_FRAME_SIZE);
-			if (written < 0 || written != PREFERRED_FRAME_SIZE) {
+					g_frame_size_p);
+			if (written < 0 || written != g_frame_size_p) {
 				fprintf(stderr,"PLAY RESET 3\n");
 				resetPlay();
 			}
