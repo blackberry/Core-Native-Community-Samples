@@ -210,7 +210,7 @@ void startPcmAudio() {
 	/* get a new audioman handle.
 	 This handle will be used to toggle device between speaker and headset
 	 */
-	audio_manager_get_handle(AUDIO_TYPE_VIDEO_CHAT, 0, false, &g_audio_manager_handle_t);
+	audio_manager_get_handle(AUDIO_TYPE_VOICE, 0, false, &g_audio_manager_handle_t);
 
     capturesetup();
     playsetup();
@@ -227,7 +227,7 @@ void startPcmAudio() {
     pthread_attr_setschedpolicy (&attr_p, SCHED_RR);
 
 
-    pthread_create(&g_capturethread,NULL, &captureThread, g_circular_buffer);
+    pthread_create(&g_capturethread,&attr_p, &captureThread, g_circular_buffer);
     pthread_create(&g_playerthread,&attr_p,&playerThread,g_circular_buffer);
     fprintf(stderr,"StartPCMAudio ****************: EXIT \n");
 }
@@ -250,18 +250,11 @@ void toggleSpeaker(bool enable) {
 	fprintf(stderr,"toggleSpeaker ****************: ENTER = %d\n", enable);
 	int ret;
 	if (enable == true) {
-		ret = audio_manager_set_handle_type(g_audio_manager_handle_t, AUDIO_TYPE_VIDEO_CHAT, AUDIO_DEVICE_SPEAKER, AUDIO_DEVICE_DEFAULT);
+		ret = audio_manager_set_handle_type(g_audio_manager_handle_t, AUDIO_TYPE_VIDEO_CHAT, AUDIO_DEVICE_DEFAULT, AUDIO_DEVICE_DEFAULT);
 	} else {
-		ret = audio_manager_set_handle_type(g_audio_manager_handle_t, AUDIO_TYPE_VIDEO_CHAT, AUDIO_DEVICE_HANDSET, AUDIO_DEVICE_DEFAULT);
+		ret = audio_manager_set_handle_type(g_audio_manager_handle_t, AUDIO_TYPE_VOICE, AUDIO_DEVICE_DEFAULT, AUDIO_DEVICE_DEFAULT);
 	}
-	if(ret == 0) {
-		ret = audio_manager_set_handle_routing_conditions(g_audio_manager_handle_t, SETTINGS_RESET_ON_DEVICE_CONNECTION);
-		if(ret != 0) {
-			fprintf(stderr,"toggleSpeaker() ERROR audio_manager_set_handle_routing_conditions = %d\n",ret);
-		}
-	} else {
-		fprintf(stderr,"toggleSpeaker() ERROR audio_manager_set_handle_type = %d\n",ret);
-	}
+
 	fprintf(stderr,"toggleSpeaker ****************: EXIT\n");
 }
 
@@ -310,7 +303,7 @@ static void capturesetup() {
 	pp.stop_mode = SND_PCM_STOP_ROLLOVER;
 	pp.start_mode = SND_PCM_START_FULL;
 	pp.buf.block.frag_size = PREFERRED_FRAME_SIZE;
-	pp.buf.block.frags_max = 5;
+	pp.buf.block.frags_max = 3;
 	pp.buf.block.frags_min = 1;
 	pp.format.interleave = 1;
 	pp.format.rate = VOIP_SAMPLE_RATE;
@@ -402,7 +395,7 @@ static void playsetup() {
 	pp.start_mode = SND_PCM_START_FULL;
 	pp.buf.block.frag_size = PREFERRED_FRAME_SIZE;
 	// Increasing this internal buffer count delays write failure in the loop
-	pp.buf.block.frags_max = 3;
+	pp.buf.block.frags_max = 5;
 	pp.buf.block.frags_min = 1;
 	pp.format.interleave = 1;
 	pp.format.rate = VOIP_SAMPLE_RATE;
@@ -473,7 +466,12 @@ static int capture(circular_buffer_t* circular_buffer) {
 				|| status.status == SND_PCM_STATUS_ERROR) {
 					fprintf(stderr, "CAPTURE FAILURE:snd_pcm_plugin_status: = %d \n",status.status);
 					if (snd_pcm_plugin_prepare (g_pcm_handle_c, SND_PCM_CHANNEL_CAPTURE) < 0) {
-						fprintf (stderr, "Capture channel prepare error %d\n",status.status);
+						fprintf (stderr, "Capture channel prepare error 1 %d\n",status.status);
+						exit (1);
+					}
+				}else{
+					if (snd_pcm_plugin_prepare (g_pcm_handle_c, SND_PCM_CHANNEL_CAPTURE) < 0) {
+						fprintf (stderr, "Capture channel prepare error 2 %d\n",status.status);
 						exit (1);
 					}
 				}
