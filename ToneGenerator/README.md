@@ -6,6 +6,9 @@ Features in this version of the sample app:
 
 - low latency tone generation from 0 Hz to 8 kHz (minimum latency measured is 60 ms)
 - use of OpenGL to render 2D waveform traces on the screen
+- multitouch support
+- chords sound better after a bug fix was made to the tone blending code in the play thread
+- rendering code was updated to adjust the rendering to support Q10 / Q5 screen resolutions (tone generation range is reduced as a result of the smaller screen height)
 
 For more information about our other Open Source projects, visit:
 
