@@ -91,7 +91,7 @@ typedef struct {
     ToneType type;
     union {
         struct dtmf dtmf;       // For DTMF tone
-        int frequency;          // For FREQ_TONE
+        double frequency;          // For FREQ_TONE
     };
 } ToneData;
 
@@ -99,10 +99,12 @@ typedef struct {
 typedef struct Tone {
     struct Tone *prev;
     struct Tone *next;
+    int id;
     long start;
     long startFull;
     long endFull;
     long end;
+    double intensity;
     long position;
     bool active;
     bool killed;
@@ -148,7 +150,7 @@ long wavepos = 0;
 
 
 
-Tone *addTone(double frequency){
+Tone *addTone(double frequency, double intensity) {
 	Tone *tone = NULL;
 	bool newTone = false;
 
@@ -162,6 +164,7 @@ Tone *addTone(double frequency){
 		tone->killed = false;
 		tone->data.type = selectedType;
 		tone->data.frequency = frequency;
+		tone->intensity = intensity;
 		tone->position = tonepos;
 		tone->start = tonepos;
 		tone->startFull = tonepos + frag_samples;
@@ -187,7 +190,7 @@ Tone *addTone(double frequency){
 			}
  		}
 
-		fprintf (stderr,"addTone tone %lx tones %lx start %ld count %d \n", tone, tones, tone->start, tone_count);
+		fprintf (stderr,"addTone tone %lx tones %lx intensity %f start %ld count %d \n", tone, tones, tone->intensity, tone->start, tone_count);
 
 		Tone *listTone;
 		for(listTone = tones; listTone != NULL; listTone = listTone->next) {
@@ -202,6 +205,18 @@ Tone *addTone(double frequency){
 	}
 
 	return tone;
+}
+
+void updateTone(Tone *tone, double intensity) {
+
+	pthread_mutex_lock(&toneMutex);
+
+	if (tone != NULL) {
+		tone->intensity = intensity;
+		fprintf (stderr,"endTone tone %lx intensity %f\n", tone, tone->intensity);
+	}
+
+	pthread_mutex_unlock(&toneMutex);
 }
 
 void endTone(Tone *tone){
@@ -231,13 +246,13 @@ static int writeTone(Tone *tone, bool superimpose)
     // Update for only as much time as we have remaining
     for(index=0; index < frag_samples; index++ ) {
 		if ((index + tone->position) >= tone->start && (index + tone->position) < tone->startFull) {
-			amplitude = 32767.0 * (double)(index + tone->position - tone->start) / (double)(tone->startFull - tone->start);
+			amplitude = 32767.0 * tone->intensity * (double)(index + tone->position - tone->start) / (double)(tone->startFull - tone->start);
 		}
 		if ((index + tone->position) >= tone->startFull && (index + tone->position) < tone->endFull) {
-			amplitude = 32767.0;
+			amplitude = 32767.0 * tone->intensity;
 		}
 		if ((index + tone->position) >= tone->endFull && (index + tone->position) < tone->end) {
-			amplitude = 32767.0 * (1.0 - (double)(index + tone->position - tone->endFull) / (double)(tone->end - tone->endFull));
+			amplitude = 32767.0 * tone->intensity * (1.0 - (double)(index + tone->position - tone->endFull) / (double)(tone->end - tone->endFull));
 		}
 		if ((index + tone->position) >= tone->end) {
 			amplitude = 0.0;
@@ -249,16 +264,16 @@ static int writeTone(Tone *tone, bool superimpose)
 			case SineWaves:
 				currentAngle = fmod(((index+tone->position)*2.0*M_PI*tone->data.frequency/sample_frequency), 2.0*M_PI);
 
-				value = sin(currentAngle)*amplitude;
+				value = sin(currentAngle)*amplitude * tone->intensity;
 				break;
 
 			case SquareWaves:
 				currentAngle = fmod(((index+tone->position)*2.0*M_PI*tone->data.frequency/sample_frequency), 2.0*M_PI);
 
 				if (currentAngle > M_PI) {
-					value = -amplitude;
+					value = -amplitude * tone->intensity;
 				} else {
-					value =  amplitude;
+					value =  amplitude * tone->intensity;
 				}
 				break;
 
@@ -266,13 +281,13 @@ static int writeTone(Tone *tone, bool superimpose)
 				currentAngle = fmod(((index+tone->position)*2.0*M_PI*tone->data.frequency/sample_frequency), 2.0*M_PI);
 
 				if (currentAngle >= 0.0 && currentAngle < 0.5*M_PI) {
-					value = amplitude * currentAngle / (0.5*M_PI);
+					value = amplitude * tone->intensity * currentAngle / (0.5*M_PI);
 				} else if (currentAngle >= 0.5*M_PI && currentAngle < M_PI) {
-					value = amplitude * (M_PI - currentAngle) / (0.5*M_PI);
+					value = amplitude * tone->intensity * (M_PI - currentAngle) / (0.5*M_PI);
 				} else if (currentAngle > M_PI && currentAngle < (1.5*M_PI)) {
-					value = -amplitude * (currentAngle - M_PI) / (0.5*M_PI);
+					value = -amplitude * tone->intensity * (currentAngle - M_PI) / (0.5*M_PI);
 				} else if (currentAngle > (1.5*M_PI)) {
-					value = -amplitude * ((2.0*M_PI) - currentAngle) / (0.5*M_PI);
+					value = -amplitude * tone->intensity * ((2.0*M_PI) - currentAngle) / (0.5*M_PI);
 				}
 				break;
 
@@ -280,21 +295,19 @@ static int writeTone(Tone *tone, bool superimpose)
 				currentAngle = fmod(((index+tone->position)*2.0*M_PI*tone->data.frequency/sample_frequency), 2.0*M_PI);
 
 				if (currentAngle >= 0.0 && currentAngle < (2.0*M_PI)) {
-					value = amplitude * (currentAngle - M_PI) / M_PI;
+					value = amplitude * tone->intensity * (currentAngle - M_PI) / M_PI;
 				}
 				break;
 
 			case DTMF:
-				value = (sin((index+tone->position)*2.0*M_PI*tone->data.dtmf.f1/sample_frequency)+sin((index+tone->position)*2.0*M_PI*tone->data.dtmf.f2/sample_frequency))*32767.0/2.0;
+				value = (sin((index+tone->position)*2.0*M_PI*tone->data.dtmf.f1/sample_frequency)+sin((index+tone->position)*2.0*M_PI*tone->data.dtmf.f2/sample_frequency))*32767.0 * tone->intensity/2.0;
 				break;
 		}
 
     	if (superimpose == true) {
 			stage_buffer[index] += value;
-			stage_buffer[index] += value;
 			stage_samples[index]++;
     	} else {
-			stage_buffer[index] = value;
 			stage_buffer[index] = value;
 			stage_samples[index] = 1;
     	}

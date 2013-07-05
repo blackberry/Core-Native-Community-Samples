@@ -53,8 +53,6 @@ static GLfloat *wave_colors;
 static GLfloat *wave_vertices1;
 static GLfloat *wave_colors1;
 
-float square_fade = 1.0;
-
 double frequency;
 int lastX=-1, lastY=-1;
 static bool sineWaves = true;
@@ -97,19 +95,22 @@ typedef enum {
 extern ToneType selectedType;
 
 typedef struct {
+    ToneType type;
     union {
         struct dtmf dtmf;       // For DTMF tone
-        ToneType type;
-        int frequency;          // For FREQ_TONE
+        double frequency;          // For FREQ_TONE
     };
 } ToneData;
 
 typedef struct {
+    struct Tone *prev;
+    struct Tone *next;
     int id;
     long start;
     long startFull;
     long endFull;
     long end;
+    double intensity;
     long position;
     bool active;
     bool killed;
@@ -118,11 +119,64 @@ typedef struct {
 
 extern int initToneGenerator();
 extern int cleanupToneGenerator();
-extern Tone *addTone(double frequency);
+extern Tone *addTone(double frequency, double intensity);
+extern void updateTone(Tone *tone, double intensity);
 extern void endTone(Tone *tone);
 
-Tone *lastTone = NULL;
-float lastFrequency = 0;
+Tone *lastTone[5] = { NULL, NULL, NULL, NULL, NULL };
+float square_fade[5] = { 1.0, 1.0, 1.0, 1.0, 1.0 };
+
+
+// render parameters
+double deviceMainScopeY;
+double deviceLargeScopeY;
+double deviceFreqTextY;
+
+double deviceSineWaveStartX;
+double deviceSineWaveStartY;
+double deviceSquareWaveStartX;
+double deviceSquareWaveStartY;
+double deviceTriangleWaveStartX;
+double deviceTriangleWaveStartY;
+double deviceSawtoothWaveStartX;
+double deviceSawtoothWaveStartY;
+
+int buttonTop;
+double deviceTop;
+
+// defaults for Z10
+double z10MainScopeY = 400.0;
+double z10LargeScopeY = 925.0;
+double z10FreqTextY = 540.0;
+
+double z10SineWaveStartX = 40.0;
+double z10SineWaveStartY = 50.0;
+double z10SquareWaveStartX = 232.0;
+double z10SquareWaveStartY = 50.0;
+double z10TriangleWaveStartX = 424.0;
+double z10TriangleWaveStartY = 50.0;
+double z10SawtoothWaveStartX = 606.0;
+double z10SawtoothWaveStartY = 50.0;
+
+int z10ButtonTop = 1024;
+double z10Top = 1280.0;
+
+// defaults for Q10
+double q10MainScopeY = -1.0;
+double q10LargeScopeY = 475.0;
+double q10FreqTextY = 200.0;
+
+double q10SineWaveStartX = 40.0;
+double q10SineWaveStartY = 50.0;
+double q10SquareWaveStartX = 232.0;
+double q10SquareWaveStartY = 50.0;
+double q10TriangleWaveStartX = 404.0;
+double q10TriangleWaveStartY = 50.0;
+double q10SawtoothWaveStartX = 586.0;
+double q10SawtoothWaveStartY = 50.0;
+
+int q10ButtonTop = 474;
+double q10Top = 720.0;
 
 
 int init() {
@@ -140,6 +194,45 @@ int init() {
     //Query width and height of the window surface created by utility code
     eglQuerySurface(egl_disp, egl_surf, EGL_WIDTH, &surface_width);
     eglQuerySurface(egl_disp, egl_surf, EGL_HEIGHT, &surface_height);
+
+    if (surface_height == 1280) {
+    	// Z10
+		deviceMainScopeY = z10MainScopeY;
+		deviceLargeScopeY = z10LargeScopeY;
+		deviceFreqTextY = z10FreqTextY;
+
+		deviceSineWaveStartX = z10SineWaveStartX;
+		deviceSineWaveStartY = z10SineWaveStartY;
+		deviceSquareWaveStartX = z10SquareWaveStartX;
+		deviceSquareWaveStartY = z10SquareWaveStartY;
+		deviceTriangleWaveStartX = z10TriangleWaveStartX;
+		deviceTriangleWaveStartY = z10TriangleWaveStartY;
+		deviceSawtoothWaveStartX = z10SawtoothWaveStartX;
+		deviceSawtoothWaveStartY = z10SawtoothWaveStartY;
+
+		buttonTop = z10ButtonTop;
+		deviceTop = z10Top;
+
+    } else if (surface_height == 720) {
+    	// Q5 / Q10
+		deviceMainScopeY = q10MainScopeY;
+		deviceLargeScopeY = q10LargeScopeY;
+		deviceFreqTextY = q10FreqTextY;
+
+		deviceSineWaveStartX = q10SineWaveStartX;
+		deviceSineWaveStartY = q10SineWaveStartY;
+		deviceSquareWaveStartX = q10SquareWaveStartX;
+		deviceSquareWaveStartY = q10SquareWaveStartY;
+		deviceTriangleWaveStartX = q10TriangleWaveStartX;
+		deviceTriangleWaveStartY = q10TriangleWaveStartY;
+		deviceSawtoothWaveStartX = q10SawtoothWaveStartX;
+		deviceSawtoothWaveStartY = q10SawtoothWaveStartY;
+
+		buttonTop = q10ButtonTop;
+		deviceTop = q10Top;
+
+    }
+
 
     EGLint err = eglGetError();
     if (err != 0x3000) {
@@ -178,8 +271,8 @@ int init() {
 	float y1 = 0.0;
 
 	// setup sine wave icon vertices
-	float startX = 50.0;
-	float startY = 50.0;
+	float startX = deviceSineWaveStartX;
+	float startY = deviceSineWaveStartY;
 	float thickX = 10.0;
 	float thickY = 10.0;
 	float stemX = 50.0;
@@ -199,9 +292,10 @@ int init() {
 		sine_wave_vertices[index*8 + 7] = startY + stemY + sin(angle1 * M_PI / 180.0) * stemY - thickY;
 	}
 
+
 	// setup square wave icon vertices
-	startX = 242.0;
-	startY = 50.0;
+	startX = deviceSquareWaveStartX;
+	startY = deviceSquareWaveStartY;
 	thickX = 5.0;
 	thickY = 5.0;
 	stemX = 50.0;
@@ -251,8 +345,8 @@ int init() {
 
 
 	// setup triangle wave icon vertices
-	startX = 434.0;
-	startY = 50.0;
+	startX = deviceTriangleWaveStartX;
+	startY = deviceTriangleWaveStartY;
 	thickX = 5.0;
 	thickY = 5.0;
 	stemX = 50.0;
@@ -286,10 +380,9 @@ int init() {
 	triangle_wave_vertices[23] = startY + stemY - thickY;
 
 
-
 	// setup sawtooth wave icon vertices
-	startX = 616.0;
-	startY = 50.0;
+	startX = deviceSawtoothWaveStartX;
+	startY = deviceSawtoothWaveStartY;
 	thickX = 5.0;
 	thickY = 5.0;
 	stemX = 50.0;
@@ -431,19 +524,21 @@ void render() {
 	short sample = 0, sample1 = 0;
 
 	// build wave vertices and normals for main scope
-	for (index = 0; index < frag_samples; index++) {
-		sample = sample_buffer[index*2];
-		sample1 = sample_buffer[(index+1)*2];
+	if (deviceMainScopeY > 0) {
+		for (index = 0; index < frag_samples; index++) {
+			sample = sample_buffer[index*2];
+			sample1 = sample_buffer[(index+1)*2];
 
-		y = (float)(sample ) / 600.0 + 400.0;
-		y1 = (float)(sample1 ) / 600.0 + 400.0;
-		y2 = y  - 20.0;
-		y3 = y1 - 20.0;
+			y = (float)(sample ) / 600.0 + deviceMainScopeY;
+			y1 = (float)(sample1 ) / 600.0 + deviceMainScopeY;
+			y2 = y  - 20.0;
+			y3 = y1 - 20.0;
 
-		wave_vertices[index * 8 +  1] = y;
-		wave_vertices[index * 8 +  3] = y1;
-		wave_vertices[index * 8 +  5] = y2;
-		wave_vertices[index * 8 +  7] = y3;
+			wave_vertices[index * 8 +  1] = y;
+			wave_vertices[index * 8 +  3] = y1;
+			wave_vertices[index * 8 +  5] = y2;
+			wave_vertices[index * 8 +  7] = y3;
+		}
 	}
 
 
@@ -452,8 +547,8 @@ void render() {
 		sample = sample_buffer[index*2];
 		sample1 = sample_buffer[(index+1)*2];
 
-		y = (float)( sample ) / 100.0 + 925.0;
-		y1 = (float)( sample1 ) / 100.0 + 925.0;
+		y = (float)( sample ) / 100.0 + deviceLargeScopeY;
+		y1 = (float)( sample1 ) / 100.0 + deviceLargeScopeY;
 		y2 = y  - 40.0;
 		y3 = y1 - 40.0;
 
@@ -499,59 +594,61 @@ void render() {
 
 
     //Setup touch location polygon
+	for (index = 0; index < 5; index ++) {
+		if (lastTone[index] != NULL) {
+			// calculate position from frequency
+			int h = ((int)lastTone[index]->data.frequency / 240) * 33;
+			int w = ((int)fmod(lastTone[index]->data.frequency, 240.0) / 10) * 32;
 
-	// calculate position from frequency
-	int h = ((int)frequency / 240) * 33;
-	int w = ((int)fmod(frequency, 240.0) / 10) * 32;
+			if (square_fade[index] == 1.0) {
+				square_vertices[0] = (float)w;
+				square_vertices[1] = deviceTop - (float)h;
+				square_vertices[2] = (float)w+32.0;
+				square_vertices[3] = deviceTop - (float)h;
+				square_vertices[4] = (float)w;
+				square_vertices[5] = deviceTop - (float)h-33.0;
+				square_vertices[6] = (float)w+32.0;
+				square_vertices[7] = deviceTop - (float)h-33.0;
 
-	if (square_fade == 1.0) {
-		square_vertices[0] = (float)w;
-		square_vertices[1] = 1280.0 - (float)h;
-		square_vertices[2] = (float)w+32.0;
-		square_vertices[3] = 1280.0 - (float)h;
-		square_vertices[4] = (float)w;
-		square_vertices[5] = 1280.0 - (float)h-33.0;
-		square_vertices[6] = (float)w+32.0;
-		square_vertices[7] = 1280.0 - (float)h-33.0;
+				fprintf(stderr, "freq box: %f : %f %f %f %f %d %d\n", lastTone[index]->data.frequency, square_vertices[0], square_vertices[1], square_vertices[6], square_vertices[7], w, h);
 
-		//fprintf(stderr, "freq box: %f : %f %f %f %f %d %d\n", frequency, vertices[0], vertices[1], vertices[6], vertices[7], w, h);
+				glColor4f(0.8f, 0.8f, 1.0f, 1.0f);
+				glEnableClientState(GL_VERTEX_ARRAY);
 
+				glVertexPointer(2, GL_FLOAT, 0, square_vertices);
 
-		glColor4f(0.8f, 0.8f, 1.0f, 1.0f);
-		glEnableClientState(GL_VERTEX_ARRAY);
+				glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-		glVertexPointer(2, GL_FLOAT, 0, square_vertices);
+				glDisableClientState(GL_VERTEX_ARRAY);
 
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+				square_fade[index] /= 1.25;
+			} else
+			if (square_fade[index] > 0.0) {
+				square_vertices[0] -= 2.0;
+				square_vertices[1] += 2.0;
+				square_vertices[2] += 2.0;
+				square_vertices[3] += 2.0;
+				square_vertices[4] -= 2.0;
+				square_vertices[5] -= 2.0;
+				square_vertices[6] += 2.0;
+				square_vertices[7] -= 2.0;
 
-		glDisableClientState(GL_VERTEX_ARRAY);
+				glColor4f(0.8f, 0.8f, 1.0f, square_fade[index]);
+				glEnableClientState(GL_VERTEX_ARRAY);
 
-		square_fade /= 1.25;
-	} else
-	if (square_fade > 0.0) {
-		square_vertices[0] -= 2.0;
-		square_vertices[1] += 2.0;
-		square_vertices[2] += 2.0;
-		square_vertices[3] += 2.0;
-		square_vertices[4] -= 2.0;
-		square_vertices[5] -= 2.0;
-		square_vertices[6] += 2.0;
-		square_vertices[7] -= 2.0;
+				glVertexPointer(2, GL_FLOAT, 0, square_vertices);
 
-		glColor4f(0.8f, 0.8f, 1.0f, square_fade);
-		glEnableClientState(GL_VERTEX_ARRAY);
+				glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-	    glVertexPointer(2, GL_FLOAT, 0, square_vertices);
+				glDisableClientState(GL_VERTEX_ARRAY);
 
-	    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+				square_fade[index] /= 1.25;
+				if (square_fade[index] < 0.1) {
+					square_fade[index] = 0.0;
+				}
 
-		glDisableClientState(GL_VERTEX_ARRAY);
-
-		square_fade /= 1.25;
-		if (square_fade < 0.1) {
-			square_fade = 0.0;
+			}
 		}
-
 	}
 
 	//fprintf(stderr, "square_fade: %f\n", square_fade);
@@ -566,10 +663,9 @@ void render() {
     float text_width, text_height;
     bbutil_measure_text(font, freqText, &text_width, &text_height);
     pos_x = (width - text_width) / 2;
-    pos_y = 540;
+    pos_y = deviceFreqTextY;
 
     bbutil_render_text(font, freqText, pos_x, pos_y, 0.8f, 0.8f, 0.8f, 1.0f);
-
 
     // draw sine wave button
 	if (sineWaves) {
@@ -667,6 +763,8 @@ void handleScreenEvent(bps_event_t *event) {
     int buttons;
     int position[2];
     int realPosition[2];
+    int touchID;
+    int touchPressure;
 
     //static bool mouse_pressed = false;
 
@@ -679,6 +777,11 @@ void handleScreenEvent(bps_event_t *event) {
     		position);
     screen_get_event_property_iv(screen_event, SCREEN_PROPERTY_POSITION,
     		realPosition);
+    screen_get_event_property_iv(screen_event, SCREEN_PROPERTY_TOUCH_ID,
+    		&touchID);
+    screen_get_event_property_iv(screen_event, SCREEN_PROPERTY_TOUCH_PRESSURE,
+    		&touchPressure);
+
 
     int x = 0;
     int y = 0;
@@ -691,7 +794,7 @@ void handleScreenEvent(bps_event_t *event) {
 			x = realPosition[0];
 			y = realPosition[1];
 
-			if (y < 1024) {
+			if (y < buttonTop) {
 				x /= 32;
 				x *= 10;
 
@@ -702,23 +805,21 @@ void handleScreenEvent(bps_event_t *event) {
 					frequency = 0;
 				}
 
-				fprintf(stderr, "last tone: %x\n", lastTone );
-				if (lastTone != NULL) {
-					endTone(lastTone);
+				fprintf(stderr, "last tone: %x\n", lastTone[touchID] );
+				if (lastTone[touchID] != NULL) {
+					endTone(lastTone[touchID]);
 				}
 
-				lastTone = addTone(frequency);
-				fprintf(stderr, "tone: %x\n", lastTone );
+				lastTone[touchID] = addTone(frequency, (float)touchPressure / 80.0);
+				fprintf(stderr, "tone: %x\n", lastTone[touchID] );
 
-				square_fade = 1.0;
+				square_fade[touchID] = 1.0;
 
 				if (first_buffer_touch == 0 && first_buffer == NULL) {
 					first_buffer_touch = currentMillis();
 				}
 
-				fprintf(stderr, "touch: %d,%d  %d,%d %f\n", realPosition[0], realPosition[1], x, y, frequency );
-
-				lastFrequency = frequency;
+				fprintf(stderr, "touch: %d %d,%d %d %d,%d %f\n", touchID, realPosition[0], realPosition[1], touchPressure, x, y, frequency );
 
 			} else {
 				if (x >= 0 && x < 192) {
@@ -765,7 +866,7 @@ void handleScreenEvent(bps_event_t *event) {
 			x = realPosition[0];
 			y = realPosition[1];
 
-			if (y < 1024) {
+			if (y < buttonTop) {
 				x /= 32;
 				x *= 10;
 
@@ -776,21 +877,19 @@ void handleScreenEvent(bps_event_t *event) {
 					frequency = 0;
 				}
 
-				if (lastFrequency != frequency) {
-					fprintf(stderr, "last tone: %lx\n", lastTone );
-					if (lastTone != NULL) {
-						endTone(lastTone);
+				if (lastTone[touchID] == NULL || (lastTone[touchID] != NULL && lastTone[touchID]->data.frequency != frequency)) {
+					fprintf(stderr, "last tone: %lx\n", lastTone[touchID] );
+					if (lastTone[touchID] != NULL) {
+						endTone(lastTone[touchID]);
 					}
 
-					lastTone = addTone(frequency);
-					fprintf(stderr, "tone: %lx\n", lastTone );
-
-					lastFrequency = frequency;
+					lastTone[touchID] = addTone(frequency, (float)touchPressure / 80.0);
+					fprintf(stderr, "tone: %lx\n", lastTone[touchID] );
 				}
 
-				square_fade = 1.0;
+				square_fade[touchID] = 1.0;
 
-				fprintf(stderr, "touch move: %d,%d  %d,%d %f\n", realPosition[0], realPosition[1], x, y, frequency );
+				fprintf(stderr, "touch move: %d %d,%d %d %d,%d %f\n", touchID, realPosition[0], realPosition[1], touchPressure, x, y, frequency );
 			} else {
 				if (x >= 0 && x < 192) {
 					selectedType = SineWaves;
@@ -835,7 +934,7 @@ void handleScreenEvent(bps_event_t *event) {
 			x = realPosition[0];
 			y = realPosition[1];
 
-			if (y < 1024) {
+			if (y < buttonTop) {
 				x /= 32;
 				x *= 10;
 
@@ -846,17 +945,15 @@ void handleScreenEvent(bps_event_t *event) {
 					frequency = 0;
 				}
 
-				fprintf(stderr, "tone: %lx\n", lastTone );
-				if (lastTone != NULL) {
-					endTone(lastTone);
-					lastTone = NULL;
+				fprintf(stderr, "tone: %lx\n", lastTone[touchID] );
+				if (lastTone[touchID] != NULL) {
+					endTone(lastTone[touchID]);
+					lastTone[touchID] = NULL;
 				}
 
-				lastFrequency = -1;
+				square_fade[touchID] = 1.0;
 
-				square_fade = 1.0;
-
-				fprintf(stderr, "touch release: %d,%d  %d,%d %f\n", realPosition[0], realPosition[1], x, y, frequency );
+				fprintf(stderr, "touch release: %d %d,%d %d %d,%d %f\n", touchID, realPosition[0], realPosition[1], touchPressure, x, y, frequency );
 			} else {
 				if (x >= 0 && x < 192) {
 					selectedType = SineWaves;
