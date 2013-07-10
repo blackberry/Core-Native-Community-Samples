@@ -34,9 +34,9 @@
 #include <GLES/gl.h>
 #include <pthread.h>
 #include <sys/timeb.h>
-
 #include "png.h"
 #include "bbutil.h"
+#include "audiopcm.h"
 
 static float width, height;
 static GLuint background;
@@ -76,52 +76,6 @@ short *sample_buffer = NULL;
 unsigned char   *first_buffer = NULL;
 _uint64 first_buffer_touch = 0, first_buffer_gen = 0, first_buffer_play = 0;
 
-
-typedef struct dtmf
-{
-    int f1;
-    int f2;
-} dtmf;
-
-typedef enum {
-	SineWaves,
-	SquareWaves,
-	TriangleWaves,
-	SawtoothWaves,
-    DTMF
-} ToneType;
-
-
-extern ToneType selectedType;
-
-typedef struct {
-    ToneType type;
-    union {
-        struct dtmf dtmf;       // For DTMF tone
-        double frequency;          // For FREQ_TONE
-    };
-} ToneData;
-
-typedef struct {
-    struct Tone *prev;
-    struct Tone *next;
-    int id;
-    long start;
-    long startFull;
-    long endFull;
-    long end;
-    double intensity;
-    long position;
-    bool active;
-    bool killed;
-    ToneData data;
-} Tone;
-
-extern int initToneGenerator();
-extern int cleanupToneGenerator();
-extern Tone *addTone(double frequency, double intensity);
-extern void updateTone(Tone *tone, double intensity);
-extern void endTone(Tone *tone);
 
 Tone *lastTone[5] = { NULL, NULL, NULL, NULL, NULL };
 float square_fade[5] = { 1.0, 1.0, 1.0, 1.0, 1.0 };
@@ -805,13 +759,13 @@ void handleScreenEvent(bps_event_t *event) {
 					frequency = 0;
 				}
 
-				fprintf(stderr, "last tone: %x\n", lastTone[touchID] );
+				fprintf(stderr, "last tone: %lx\n", (unsigned long int)lastTone[touchID] );
 				if (lastTone[touchID] != NULL) {
 					endTone(lastTone[touchID]);
 				}
 
 				lastTone[touchID] = addTone(frequency, (float)touchPressure / 80.0);
-				fprintf(stderr, "tone: %x\n", lastTone[touchID] );
+				fprintf(stderr, "tone: %lx\n", (unsigned long int)lastTone[touchID] );
 
 				square_fade[touchID] = 1.0;
 
@@ -878,13 +832,13 @@ void handleScreenEvent(bps_event_t *event) {
 				}
 
 				if (lastTone[touchID] == NULL || (lastTone[touchID] != NULL && lastTone[touchID]->data.frequency != frequency)) {
-					fprintf(stderr, "last tone: %lx\n", lastTone[touchID] );
+					fprintf(stderr, "last tone: %lx\n", (unsigned long int)lastTone[touchID] );
 					if (lastTone[touchID] != NULL) {
 						endTone(lastTone[touchID]);
 					}
 
 					lastTone[touchID] = addTone(frequency, (float)touchPressure / 80.0);
-					fprintf(stderr, "tone: %lx\n", lastTone[touchID] );
+					fprintf(stderr, "tone: %lx\n", (unsigned long int)lastTone[touchID] );
 				}
 
 				square_fade[touchID] = 1.0;
@@ -945,7 +899,7 @@ void handleScreenEvent(bps_event_t *event) {
 					frequency = 0;
 				}
 
-				fprintf(stderr, "tone: %lx\n", lastTone[touchID] );
+				fprintf(stderr, "tone: %lx\n", (unsigned long int)lastTone[touchID] );
 				if (lastTone[touchID] != NULL) {
 					endTone(lastTone[touchID]);
 					lastTone[touchID] = NULL;

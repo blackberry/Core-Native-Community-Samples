@@ -34,6 +34,7 @@
 #include <sys/slog.h>
 #include <sys/slogcodes.h>
 
+#include "audiopcm.h"
 
 // ulaw silence is FF
 static const char SILENCE = 0xFF;
@@ -49,67 +50,6 @@ extern _uint64 first_buffer_touch, first_buffer_gen, first_buffer_play;
 extern _uint64 currentMillis();
 
 
-
-typedef enum {
-    STOPPED,
-    RUNNING,
-    DEAD
-} State;
-
-typedef enum {
-	SineWaves,
-	SquareWaves,
-	TriangleWaves,
-	SawtoothWaves,
-    DTMF
-} ToneType;
-
-struct dtmf
-{
-    int f1;
-    int f2;
-} dtmf_table [] = {
-    {697, 1209},
-    {697, 1336},
-    {697, 1477},
-    {697, 1633},
-    {770, 1209},
-    {770, 1336},
-    {770, 1477},
-    {770, 1633},
-    {852, 1209},
-    {852, 1336},
-    {852, 1477},
-    {852, 1633},
-    {941, 1209},
-    {941, 1336},
-    {941, 1477},
-    {941, 1633}
-};
-
-typedef struct {
-    ToneType type;
-    union {
-        struct dtmf dtmf;       // For DTMF tone
-        double frequency;          // For FREQ_TONE
-    };
-} ToneData;
-
-
-typedef struct Tone {
-    struct Tone *prev;
-    struct Tone *next;
-    int id;
-    long start;
-    long startFull;
-    long endFull;
-    long end;
-    double intensity;
-    long position;
-    bool active;
-    bool killed;
-    ToneData data;
-} Tone;
 
 ToneType selectedType = SineWaves;
 
@@ -190,11 +130,11 @@ Tone *addTone(double frequency, double intensity) {
 			}
  		}
 
-		fprintf (stderr,"addTone tone %lx tones %lx intensity %f start %ld count %d \n", tone, tones, tone->intensity, tone->start, tone_count);
+		fprintf (stderr,"addTone tone %lx tones %lx intensity %f start %ld count %d \n", (unsigned long int)tone, (unsigned long int)tones, tone->intensity, (unsigned long int)tone->start, tone_count);
 
 		Tone *listTone;
 		for(listTone = tones; listTone != NULL; listTone = listTone->next) {
-			fprintf (stderr,"addTone::tone %lx prev %lx next %lx \n", listTone, listTone->prev, listTone->next);
+			fprintf (stderr,"addTone::tone %lx prev %lx next %lx \n", (unsigned long int)listTone, (unsigned long int)listTone->prev, (unsigned long int)listTone->next);
 		}
 	}
 
@@ -213,7 +153,7 @@ void updateTone(Tone *tone, double intensity) {
 
 	if (tone != NULL) {
 		tone->intensity = intensity;
-		fprintf (stderr,"endTone tone %lx intensity %f\n", tone, tone->intensity);
+		fprintf (stderr,"endTone tone %lx intensity %f\n", (unsigned long int)tone, tone->intensity);
 	}
 
 	pthread_mutex_unlock(&toneMutex);
@@ -226,7 +166,7 @@ void endTone(Tone *tone){
 	if (tone != NULL) {
 		tone->endFull = tonepos;
 		tone->end = tone->endFull + frag_samples * (tone->endFull - tone->startFull) / (sample_frequency / 10.0);
-		fprintf (stderr,"endTone tone %lx start %ld end %ld  \n", tone, tone->start, tone->end);
+		fprintf (stderr,"endTone tone %lx start %ld end %ld  \n", (unsigned long int)tone, (unsigned long int)tone->start, (unsigned long int)tone->end);
 	}
 
 	pthread_mutex_unlock(&toneMutex);
@@ -612,7 +552,7 @@ static void *processTones(void *dummy)
 
 					delete_count++;
 
-					fprintf (stderr,"processTone::delete tone %lx tones %lx count %d \n", tone, tones, tone_count);
+					fprintf (stderr,"processTone::delete tone %lx tones %lx count %d \n", (unsigned long int)tone, (unsigned long int)tones, tone_count);
 
 					break;
 				}
