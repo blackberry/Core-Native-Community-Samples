@@ -6,7 +6,7 @@ SpaceGame is a space shooting game created as part of the blog tutorial on creat
 
 
 **Author:**
-[Pratik Sapra](https://github.com/psapra)
+[Pratik Sapra](https://github.com/pratiksapra)
 
 **Feature summary:**
  - Game development basics 

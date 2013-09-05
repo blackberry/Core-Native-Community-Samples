@@ -187,7 +187,7 @@ private:
 	void updatePlayerHealthBar();
 
 	//Update Enemy health bar
-	void enemyEnemyHealthBar();
+	void updateEnemyHealthBar();
 
 	//Handle win/lose
 	void endGame(bool won);
