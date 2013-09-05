@@ -204,7 +204,7 @@ bool HelloWorld::init()
 		 _enemyHealthLabel->setVisible(false);
 		 this->addChild(_enemyHealthLabel, 10);
 
-		 enemyEnemyHealthBar();
+		 updateEnemyHealthBar();
 
 		 _gameOver = false;
 
@@ -411,7 +411,7 @@ void HelloWorld::updateGame(float dt) {
 					createParticleEffect("Particles/ExplodingRing.plist",_playerMines[j]->getPositionX(),_playerMines[j]->getPositionY());
 					CocosDenshion::SimpleAudioEngine::sharedEngine()->playEffect("explode.wav");
 					--_enemyHealth;
-					enemyEnemyHealthBar();
+					updateEnemyHealthBar();
 					//Create Small Sun particle effect to signify Enemy damage
 					createParticleEffect("Particles/SmallSun.plist",_enemy->getPositionX(),_enemy->getPositionY());
 					if (_enemyHealth <= 0) {
@@ -613,7 +613,7 @@ void HelloWorld::updatePlayerHealthBar() {
 }
 
 
-void HelloWorld::enemyEnemyHealthBar() {
+void HelloWorld::updateEnemyHealthBar() {
 	//Scale the health bar by dividing current health by max health
 	float scaleFactor = ((float)_enemyHealth / MAX_ENEMY_HEALTH);
 	_enemyHealthBar->setScaleX(scaleFactor);
