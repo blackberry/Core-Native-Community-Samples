@@ -30,12 +30,14 @@ class AudioControl : public QObject{
 Q_OBJECT
 Q_PROPERTY(bool audioRunningProperty READ isAudioRunning NOTIFY audioRunningSignal)
 Q_PROPERTY(bool speakerOnProperty READ isSpeakerOn NOTIFY speakerOnSignal)
+Q_PROPERTY(bool muteOnProperty READ isMuteOn NOTIFY muteOnSignal)
 
 public:
 	AudioControl(QObject* parent = NULL);
 	virtual ~AudioControl();
 public slots:
 	void toggleSpeaker();
+	void toggleMute();
 	void toggleAudioOnOff();
 	void dtmfKeyDown();
 	void dtmfKeyUp();
@@ -44,15 +46,18 @@ public slots:
 signals:
 	void audioRunningSignal(bool);
 	void speakerOnSignal(bool);
+	void muteOnSignal(bool);
 private:
 	bool isAudioRunning();
 	bool isSpeakerOn();
+	bool isMuteOn();
 	void releaseAudioManagerHandle();
 	void lazyInitializDtmfPlayer();
 
 private:
 	bool m_audioRunning;
 	bool m_speakerOn;
+	bool m_MuteOn;
 	unsigned int m_dtmfAudioManager;
 	MediaPlayer m_mediaPlayer;
 

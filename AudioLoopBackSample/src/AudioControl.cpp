@@ -27,6 +27,7 @@
 extern void startPcmAudio();
 extern void stopPcmAudio();
 extern void toggleSpeaker(bool enable);
+extern void toggleMute(bool enable);
 
 using namespace bb::system::phone;
 using namespace bb::device;
@@ -35,6 +36,7 @@ using namespace bb::device;
 AudioControl::AudioControl(QObject* parent) : QObject(parent)
 	, m_audioRunning(false)
 	, m_speakerOn(false)
+	, m_MuteOn(false)
 	, m_dtmfAudioManager(0)
 {
 	Phone* phone = new Phone(this);
@@ -59,11 +61,20 @@ void AudioControl::toggleSpeaker()
     emit speakerOnSignal(m_speakerOn);
 }
 
+void AudioControl::toggleMute()
+{
+	m_MuteOn ? ::toggleMute(false) : ::toggleMute(true);
+    m_MuteOn = !m_MuteOn;
+    emit muteOnSignal(m_MuteOn);
+}
+
 void AudioControl::toggleAudioOnOff()
 {
 	if(m_audioRunning){
 		m_speakerOn = false;
+		m_MuteOn = false;
 		emit speakerOnSignal(m_speakerOn);
+		emit muteOnSignal(m_MuteOn);
 	}
 	m_audioRunning ? stopPcmAudio() : startPcmAudio();
 	m_audioRunning = !m_audioRunning;
@@ -78,6 +89,11 @@ bool AudioControl::isAudioRunning()
 bool AudioControl::isSpeakerOn()
 {
 	return m_speakerOn;
+}
+
+bool AudioControl::isMuteOn()
+{
+	return m_MuteOn;
 }
 
 void AudioControl::releaseAudioManagerHandle()
