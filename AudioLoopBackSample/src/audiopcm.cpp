@@ -14,6 +14,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
 #include <ctype.h>
@@ -44,6 +45,8 @@
 #include <stdio.h>
 #include <errno.h>
 #include <gulliver.h>
+#include <bps/bps.h>
+#include <bps/audiomixer.h>
 
 typedef struct circular_buffer {
 	int length;
@@ -258,6 +261,27 @@ void toggleSpeaker(bool enable) {
 	fprintf(stderr,"toggleSpeaker ****************: EXIT\n");
 }
 
+void toggleMute(bool enable) {
+
+	fprintf(stderr,"toggleMute ****************: \n");
+
+	if (enable == true) {
+		//ret = audio_manager_set_handle_type(g_audio_manager_handle_t, AUDIO_TYPE_VIDEO_CHAT, AUDIO_DEVICE_DEFAULT, AUDIO_DEVICE_DEFAULT);
+		fprintf(stderr,"toggleMute ****************: ENTER = %d\n", enable);
+		fprintf(stderr, "Headphone Mute: %d\n", audiomixer_set_output_mute(AUDIOMIXER_OUTPUT_HEADPHONE, true));
+		fprintf(stderr, "Speaker Mute: %d\n", audiomixer_set_output_mute(AUDIOMIXER_OUTPUT_SPEAKER, true));
+		fprintf(stderr, "Speaker Mute: %d\n", audiomixer_set_output_mute(AUDIOMIXER_OUTPUT_HANDSET, true));
+
+	} else {
+		fprintf(stderr,"toggleMute ****************: ENTER = %d\n", enable);
+		fprintf(stderr, "Headphone Mute: %d\n", audiomixer_set_output_mute(AUDIOMIXER_OUTPUT_HEADPHONE, false));
+		fprintf(stderr, "Speaker Mute: %d\n", audiomixer_set_output_mute(AUDIOMIXER_OUTPUT_SPEAKER, false));
+		fprintf(stderr, "Speaker Mute: %d\n", audiomixer_set_output_mute(AUDIOMIXER_OUTPUT_HANDSET, false));
+	}
+
+	fprintf(stderr,"toggleSpeaker ****************: EXIT\n");
+}
+
 static void capturesetup() {
 
 	snd_pcm_channel_setup_t setup;
@@ -463,6 +487,7 @@ static int capture(circular_buffer_t* circular_buffer) {
 			} else {
 				if (status.status == SND_PCM_STATUS_READY
 				|| status.status == SND_PCM_STATUS_OVERRUN
+				|| status.status == SND_PCM_STATUS_CHANGE
 				|| status.status == SND_PCM_STATUS_ERROR) {
 					fprintf(stderr, "CAPTURE FAILURE:snd_pcm_plugin_status: = %d \n",status.status);
 					if (snd_pcm_plugin_prepare (g_pcm_handle_c, SND_PCM_CHANNEL_CAPTURE) < 0) {
@@ -506,6 +531,7 @@ static void resetPlay() {
 	}
 	if (status.status == SND_PCM_STATUS_READY
 			|| status.status == SND_PCM_STATUS_UNDERRUN
+			|| status.status == SND_PCM_STATUS_CHANGE
 			|| status.status == SND_PCM_STATUS_ERROR) {
 		fprintf(stderr, "PLAYBACK FAILURE:snd_pcm_plugin_status: = %d \n",status.status);
 		if (snd_pcm_plugin_prepare (g_pcm_handle_p, SND_PCM_CHANNEL_PLAYBACK) < 0) {

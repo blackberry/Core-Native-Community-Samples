@@ -36,6 +36,13 @@ Page {
             }
             Button {
                 enabled: _audioControl.audioRunningProperty ? true : false
+                text: _audioControl.muteOnProperty ? "Mute OFF" : "Mute ON"
+                onClicked: {
+                    _audioControl.toggleMute()
+                }
+            }
+            Button {
+                enabled: _audioControl.audioRunningProperty ? true : false
                 text: _audioControl.speakerOnProperty ? "Speaker OFF" : "Speaker ON"
                 onClicked: {
                     _audioControl.toggleSpeaker()
