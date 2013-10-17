@@ -291,19 +291,15 @@ static void capturesetup() {
 	snd_pcm_channel_params_t pp;
 	int card = setup.mixer_card;
 
-	audio_manager_snd_pcm_open_name(AUDIO_TYPE_VIDEO_CHAT, &g_pcm_handle_c,
-			&g_audio_manager_handle_c, (char*) "voice", SND_PCM_OPEN_CAPTURE);
 
-	if ((ret = snd_pcm_plugin_set_disable(g_pcm_handle_c, PLUGIN_DISABLE_MMAP))
-			< 0) {
-		fprintf(stderr, "snd_pcm_plugin_set_disable failed: %s\n", snd_strerror (ret));
+	if ((ret = audio_manager_snd_pcm_open_name(AUDIO_TYPE_VIDEO_CHAT, &g_pcm_handle_c,
+			&g_audio_manager_handle_c, (char*) "voice", SND_PCM_OPEN_CAPTURE)) < 0) {
+
 		return;
 	}
 
-	if ((ret = snd_pcm_plugin_set_enable(g_pcm_handle_c, PLUGIN_ROUTING)) < 0) {
-		fprintf(stderr, "snd_pcm_plugin_set_enable: %s\n", snd_strerror (ret));
-		return;
-	}
+	snd_pcm_plugin_set_disable(g_pcm_handle_c, PLUGIN_DISABLE_MMAP);
+	snd_pcm_plugin_set_enable(g_pcm_handle_c, PLUGIN_ROUTING);
 
 	// sample reads the capabilities of the capture
 	memset(&pi, 0, sizeof(pi));
@@ -325,7 +321,7 @@ static void capturesetup() {
 	//pp.start_mode = SND_PCM_START_DATA;
 	// Auto-recover from errors
 	pp.stop_mode = SND_PCM_STOP_ROLLOVER;
-	pp.start_mode = SND_PCM_START_FULL;
+	pp.start_mode = SND_PCM_START_DATA;
 	pp.buf.block.frag_size = PREFERRED_FRAME_SIZE;
 	pp.buf.block.frags_max = 3;
 	pp.buf.block.frags_min = 1;
@@ -387,16 +383,10 @@ static void playsetup() {
 		return;
 	}
 
-	if ((ret = snd_pcm_plugin_set_disable(g_pcm_handle_p, PLUGIN_DISABLE_MMAP))
-			< 0) {
-		fprintf(stderr, "snd_pcm_plugin_set_disable failed: %s\n", snd_strerror (ret));
-		return;
-	}
+	snd_pcm_plugin_set_disable(g_pcm_handle_p, PLUGIN_DISABLE_MMAP);
+    snd_pcm_plugin_set_enable(g_pcm_handle_p, PLUGIN_ROUTING);
 
-	if ((ret = snd_pcm_plugin_set_enable(g_pcm_handle_p, PLUGIN_ROUTING)) < 0) {
-		fprintf(stderr, "snd_pcm_plugin_set_enable: %s\n", snd_strerror (ret));
-		return;
-	}
+
 	memset(&pi, 0, sizeof(pi));
 	pi.channel = SND_PCM_CHANNEL_PLAYBACK;
 	if ((ret = snd_pcm_plugin_info(g_pcm_handle_p, &pi)) < 0) {
@@ -494,22 +484,19 @@ static int capture(circular_buffer_t* circular_buffer) {
 						fprintf (stderr, "Capture channel prepare error 1 %d\n",status.status);
 						exit (1);
 					}
-				}else{
-					if (snd_pcm_plugin_prepare (g_pcm_handle_c, SND_PCM_CHANNEL_CAPTURE) < 0) {
-						fprintf (stderr, "Capture channel prepare error 2 %d\n",status.status);
-						exit (1);
-					}
+
 				}
 			}
 		} else {
 			totalRead += read;
+			// On simulator always room in the circular buffer
+			if (!writeToCircularBuffer(circular_buffer, record_buffer,
+					g_frame_size_c)) {
+				failed++;
+			}
 		}
 		capture_ready = true;
-		// On simulator always room in the circular buffer
-		if (!writeToCircularBuffer(circular_buffer, record_buffer,
-				g_frame_size_c)) {
-			failed++;
-		}
+
 	}
 	fprintf(stderr,"CAPTURE EXIT BEGIN\n");
 	(void) snd_pcm_plugin_flush(g_pcm_handle_c, SND_PCM_CHANNEL_CAPTURE);
@@ -571,8 +558,10 @@ static int play(circular_buffer_t* circular_buffer) {
 			if (written < 0 || written != g_frame_size_p) {
 				fprintf(stderr,"PLAY RESET 1\n");
 				resetPlay();
+			}else{
+				total_written += written;
 			}
-			total_written += written;
+
 		} else if (readFromCircularBuffer(circular_buffer, play_buffer,
 				g_frame_size_p)) {
 			written = snd_pcm_plugin_write(g_pcm_handle_p, play_buffer,
@@ -580,8 +569,10 @@ static int play(circular_buffer_t* circular_buffer) {
 			if (written < 0 || written != g_frame_size_p) {
 				fprintf(stderr,"PLAY RESET 2\n");
 				resetPlay();
+			}else{
+				total_written += written;
 			}
-			total_written += written;
+
 		} else {
 			// You would expect the jitter buffer to be possibly empty at startup because threads are not synchronized
 			// increasing the frags_max reduces the occurrences of failure here
