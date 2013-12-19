@@ -94,8 +94,8 @@ bool HelloWorld::init()
 
 		//Load Player Spaceship sprite
 		_player = CCSprite::createWithSpriteFrameName("playership.png");
-		_player->setScaleX(0.2);
-		_player->setScaleY(0.2);
+		_player->setScaleX(0.5);
+		_player->setScaleY(0.5);
 		//Position the player sprite at the bottom of the screen
 		_player->setPosition(ccp(_winWidth/2,_origin.y + (_player->getScaleY()*_player->getContentSize().height)));
 		 this->addChild(_player,10); //Highest Z-order since player sprite needs to be always on the top
@@ -122,7 +122,7 @@ bool HelloWorld::init()
 		 //Initialize Player projectile sprites
 		 for (int i =0; i<MAX_PLAYER_PROJECTILES;++i) {
 			 _playerProjectiles[i] =  CCSprite::createWithSpriteFrameName("playerlaser.png");
-			 _playerProjectiles[i]->setScaleY(0.2);
+			 _playerProjectiles[i]->setScale(SPRITE_SCALE_FACTOR);
 			 _playerProjectiles[i]->setVisible(false);
 			 _playerProjectiles[i]->setPosition(ccp(_player->getPositionX(),_player->getPositionY()+(_player->getScaleY()*_player->getContentSize().height)));
 			 this->addChild(_playerProjectiles[i]);
@@ -156,7 +156,7 @@ bool HelloWorld::init()
 		 //Initialize Player Mine sprites
 		 for (int i =0; i<MAX_PLAYER_MINES;++i) {
 			 _playerMines[i] =  CCSprite::createWithSpriteFrameName("playermine.png");
-			 _playerMines[i]->setScale(0.2);
+			 _playerMines[i]->setScale(SPRITE_SCALE_FACTOR);
 			 _playerMines[i]->setVisible(false);
 			 _playerMines[i]->setPosition(ccp(_player->getPositionX(),_player->getPositionY()-(_player->getScaleY()*_player->getContentSize().height)));
 			 this->addChild(_playerMines[i]);
@@ -165,8 +165,8 @@ bool HelloWorld::init()
 
 		 //Load Enemy Spaceship sprite
 		 _enemy = CCSprite::createWithSpriteFrameName("enemyship.png");
-		 _enemy->setScaleX(0.3);
-		 _enemy->setScaleY(0.3);
+		 _enemy->setScaleX(0.5);
+		 _enemy->setScaleY(0.5);
 		 _enemy->setPosition(ccp(_winWidth/2,_origin.y - (_enemy->getContentSize().height * _enemy->getScaleY())));
 		 _enemy->setVisible(false);
 		 this->addChild(_enemy);
@@ -175,7 +175,7 @@ bool HelloWorld::init()
 		 //Initialize Enemy projectile sprites
 		 for (int i =0; i < MAX_ENEMY_PROJECTILES;++i) {
 		 _enemyProjectiles[i] =  CCSprite::createWithSpriteFrameName("enemylaser.png");
-			_enemyProjectiles[i]->setScaleY(0.2);
+			_enemyProjectiles[i]->setScale(SPRITE_SCALE_FACTOR);
 			_enemyProjectiles[i]->setVisible(false);
 			_enemyProjectiles[i]->setPosition(ccp(_enemy->getPositionX(),_enemy->getPositionY()+(_enemy->getScaleY()*_enemy->getContentSize().height)));
 			this->addChild(_enemyProjectiles[i]);
@@ -183,24 +183,25 @@ bool HelloWorld::init()
 
 		 //Initialize Player and Enemy health bar sprites
 		 _playerHealthBar = CCSprite::createWithSpriteFrameName("health_bar_green.png");
-		 _playerHealthBar->setScaleY(0.2);
-		 _playerHealthBar->setPosition(ccp(_origin.x+_playerHealthBar->getScaleX()*_playerHealthBar->getContentSize().width/2,_origin.y+_playerHealthBar->getScaleY()*_playerHealthBar->getContentSize().height));
+		 _playerHealthBar->setScale(SPRITE_SCALE_FACTOR);
+		 _playerHealthBar->setPosition(ccp(_origin.x+_playerHealthBar->getScaleX()*_playerHealthBar->getContentSize().width/2,_winHeight-_playerHealthBar->getScaleY()*_playerHealthBar->getContentSize().height));
 		 this->addChild(_playerHealthBar,10);
 
-		 _playerHealthLabel = CCLabelTTF::create("HEALTH", "Arial", 24);
-		 _playerHealthLabel->setPosition(ccp(_origin.x+_playerHealthLabel->getContentSize().width/2,_origin.y+_playerHealthLabel->getContentSize().height+_playerHealthBar->getScaleY()*_playerHealthBar->getContentSize().height));
+		 _playerHealthLabel = CCLabelTTF::create("PLAYER", "Arial", 24);
+		 _playerHealthLabel->setPosition(ccp(_origin.x+_playerHealthLabel->getContentSize().width/2,_winHeight-_playerHealthLabel->getContentSize().height-_playerHealthBar->getScaleY()*_playerHealthBar->getContentSize().height));
 		 this->addChild(_playerHealthLabel, 10);
 
 		 updatePlayerHealthBar();
 
 		 _enemyHealthBar = CCSprite:: createWithSpriteFrameName ("health_bar_green.png");
-		 _enemyHealthBar->setScaleY(0.2);
-		 _enemyHealthBar->setPosition(ccp(_origin.x+_enemyHealthBar->getScaleX()*_enemyHealthBar->getContentSize().width/2,_winHeight-_enemyHealthBar->getScaleY()*_enemyHealthBar->getContentSize().height));
+		 _enemyHealthBar->setScaleY(0.5);
+		 _enemyHealthBar->setPosition(ccp(_origin.x+_enemyHealthBar->getScaleX()*_enemyHealthBar->getContentSize().width/2,_origin.y+_enemyHealthBar->getScaleY()*_enemyHealthBar->getContentSize().height));
+
 		 _enemyHealthBar->setVisible(false);
 		 this->addChild(_enemyHealthBar,10);
 
 		 _enemyHealthLabel = CCLabelTTF::create("ENEMY", "Arial", 24);
-		 _enemyHealthLabel->setPosition(ccp(_origin.x+_enemyHealthLabel->getContentSize().width/2,_winHeight-_enemyHealthLabel->getContentSize().height-_enemyHealthBar->getScaleY()*_enemyHealthBar->getContentSize().height));
+		 _enemyHealthLabel->setPosition(ccp(_origin.x+_enemyHealthLabel->getContentSize().width/2,_origin.y+_enemyHealthLabel->getContentSize().height+_enemyHealthBar->getScaleY()*_enemyHealthBar->getContentSize().height));
 		 _enemyHealthLabel->setVisible(false);
 		 this->addChild(_enemyHealthLabel, 10);
 
@@ -235,7 +236,7 @@ bool HelloWorld::init()
 		 _resumeMenuItem->setNormalSpriteFrame(CCSpriteFrameCache::sharedSpriteFrameCache()->spriteFrameByName("resume.png"));
 
 		 _pauseResumeToggleItem = CCMenuItemToggle::createWithTarget(this,menu_selector(HelloWorld::menuPauseResumeCallback),_pauseMenuItem,_resumeMenuItem,NULL);
-		 _pauseResumeToggleItem->setScale(0.3f);
+		 _pauseResumeToggleItem->setScale(0.5f);
 		 //Position the pause/resume menu item to the top right corner of the screen
 		 _pauseResumeToggleItem->setPosition(ccp(visibleSize.width - _pauseResumeToggleItem->getScaleX() * _pauseResumeToggleItem->getContentSize().width/2 ,
 													 visibleSize.height- _pauseResumeToggleItem->getScaleY() * _pauseResumeToggleItem->getContentSize().height/2));
@@ -418,7 +419,7 @@ void HelloWorld::updateGame(float dt) {
 						//Destroy Enemy spaceship with a sound effect and a custom galaxy particle effect
 						_enemy->setVisible(false);;
 						ccColor4F startColor = {1.0f, 0.5f, 0.5f, 1.0f};
-						createParticleEffect("Particles/Galaxy.plist",_enemy->getPositionX(),_enemy->getPositionY(),startColor,2.0f,200.0f);
+						createParticleEffect("Particles/Galaxy.plist",_enemy->getPositionX(),_enemy->getPositionY(),startColor,1.0f,200.0f);
 						CocosDenshion::SimpleAudioEngine::sharedEngine()->playEffect("explode_ship.wav");
 						endGame(true);
 					}
@@ -595,7 +596,7 @@ void HelloWorld::updatePlayerHealthBar() {
 	//Scale the health bar by dividing current health by max health
 	float scaleFactor = ((float)_playerHealth / MAX_PLAYER_HEALTH);
  	_playerHealthBar->setScaleX(scaleFactor);
-	_playerHealthBar->setPosition(ccp(_origin.x+_playerHealthBar->getScaleX()*_playerHealthBar->getContentSize().width/2,_origin.y+_playerHealthBar->getScaleY()*_playerHealthBar->getContentSize().height));
+	_playerHealthBar->setPosition(ccp(_origin.x+_playerHealthBar->getScaleX()*_playerHealthBar->getContentSize().width/2,_winHeight-_playerHealthBar->getScaleY()*_playerHealthBar->getContentSize().height));
 	//If health is between 40-60% display yellow bar
 	if (scaleFactor*10 <=6 && scaleFactor*10 >= 4) {
 		_playerHealthBar->setDisplayFrame(CCSpriteFrameCache::sharedSpriteFrameCache()->spriteFrameByName("health_bar_yellow.png"));
@@ -617,7 +618,7 @@ void HelloWorld::updateEnemyHealthBar() {
 	//Scale the health bar by dividing current health by max health
 	float scaleFactor = ((float)_enemyHealth / MAX_ENEMY_HEALTH);
 	_enemyHealthBar->setScaleX(scaleFactor);
-	_enemyHealthBar->setPosition(ccp(_origin.x+_enemyHealthBar->getScaleX()*_enemyHealthBar->getContentSize().width/2,_winHeight-_enemyHealthBar->getScaleY()*_enemyHealthBar->getContentSize().height));
+	_enemyHealthBar->setPosition(ccp(_origin.x+_enemyHealthBar->getScaleX()*_enemyHealthBar->getContentSize().width/2,_origin.y+_enemyHealthBar->getScaleY()*_enemyHealthBar->getContentSize().height));
 	 //If health is between 40-60% display yellow bar
 	if (scaleFactor*10 <=6 && scaleFactor*10 >= 4) {
 		_enemyHealthBar->setDisplayFrame(CCSpriteFrameCache::sharedSpriteFrameCache()->spriteFrameByName("health_bar_yellow.png"));
