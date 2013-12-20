@@ -22,12 +22,13 @@ limitations under the License.
 
 #define MAX_SCROLL_SPEED 15 //Maximum background scroll speed
 #define ACC_ADJUST_FACTOR 8.0f //Accelerometer Adjustment
+#define SPRITE_SCALE_FACTOR 0.5f //Scale factor for sprite assets
 #define MAX_PLAYER_PROJECTILES 10 //Max Number of Player Lasers
 #define MAX_PLAYER_MINES 30 //Max Number of Player Mines
 #define NUM_ASTEROIDS 30 //Max Number of Asteroids
 #define ASTEROID_SPAWN_INTERVAL 0.2f //Interval delay for creating new Asteroids
 #define ASTEROID_SPAWN_START 3.0f //Game time when we start spawning the Asteroids
-#define ASTEROID_SPAWN_END 30.0f //Game time when we stop spawning the Asteroids
+#define ASTEROID_SPAWN_END 20.0f //Game time when we stop spawning the Asteroids
 #define MAX_PLAYER_HEALTH 10.0f //Max health of the Player spaceship
 #define MAX_ENEMY_PROJECTILES 40 //Max Number of Enemy Lasers
 #define MAX_ENEMY_HEALTH 30.0f ///Max health of the Enemy spaceship
@@ -43,14 +44,14 @@ class HelloWorld : public cocos2d::CCLayer
 {
 public:
     // Here's a difference. Method 'init' in cocos2d-x returns bool, instead of returning 'id' in cocos2d-iphone
-    virtual bool init();  
+    virtual bool init();
 
     // there's no 'id' in cpp, so we recommend returning the class instance pointer
     static cocos2d::CCScene* scene();
-    
+
     // a selector callback
     void menuCloseCallback(CCObject* pSender);
-    
+
     // implement the "static node()" method manually
     CREATE_FUNC(HelloWorld);
 
@@ -104,8 +105,8 @@ private:
 	//Player Mine sprites
 	cocos2d::CCSprite* _playerMines[MAX_PLAYER_MINES];
 
-	
-	
+
+
 	//Keep track of current Asteroid
 	int _asteroidCount;
 
