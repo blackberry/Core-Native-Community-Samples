@@ -1,0 +1,7 @@
+.DS_Store
+ToneGenerator/CMakeCache.txt
+ToneGenerator/CMakeFiles
+ToneGenerator/Makefile
+ToneGenerator/cmake_install.cmake
+ToneGenerator/install_manifest.txt
+ToneGenerator/Device-Debug
