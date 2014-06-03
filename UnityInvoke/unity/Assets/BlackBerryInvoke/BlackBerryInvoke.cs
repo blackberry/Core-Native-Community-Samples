@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 using UnityEngine;
 using System.Collections;
 using System.Runtime.InteropServices;
@@ -23,7 +23,7 @@ using System.Runtime.InteropServices;
  * https://developer.blackberry.com/native/documentation/cascades/device_platform/invocation/invoking_core_apps.html
  * */
 
-public class BBInvoke : MonoBehaviour {
+public class BlackBerryInvoke : MonoBehaviour {
 	#if UNITY_IPHONE || UNITY_XBOX360
 	
 	// On iOS and Xbox 360 plugins are statically linked into
@@ -35,7 +35,7 @@ public class BBInvoke : MonoBehaviour {
 	
 	// Other platforms load plugins dynamically, so pass the name
 	// of the plugin's dynamic library.
-	[DllImport("BBInvoke")]
+	[DllImport("BlackBerryInvoke")]
 	
 	#endif
 	
