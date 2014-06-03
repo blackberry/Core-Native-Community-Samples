@@ -15,28 +15,30 @@
  */
  
 /*
- * libBBInvoke.h
+ * BlackBerryInvoke.h
  *
- *  Created on: 2014-05-09
+ *  Created on: 2014-05-29
  *      Author: eoros
  */
 
-#ifndef LIBBBINVOKE_H_
-#define LIBBBINVOKE_H_
+#ifndef BLACKBERRYINVOKE_H_
+#define BLACKBERRYINVOKE_H_
 
 #pragma GCC visibility push(default)
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 void invoke(const char *action, const char *data,
 		const char *file_transfer_mode, const char *id, const int list_id,
 		const char *metadata, const char *source, const char *target,
 		const int target_type_mask, const char *type, const char *uri);
+
 #ifdef __cplusplus
 }
 #endif
 
 #pragma GCC visibility pop
 
-#endif /* LIBBBINVOKE_H_ */
+#endif /* BLACKBERRYINVOKE_H_ */

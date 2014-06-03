@@ -14,10 +14,10 @@
  * limitations under the License.
  */
  
-/*
- * libBBInvoke.c
+ /*
+ * BlackBerryInvoke.c
  *
- *  Created on: 2014-05-09
+ *  Created on: 2014-05-29
  *      Author: eoros
  */
 
@@ -25,7 +25,7 @@
 #include <string.h>
 #include <bps/navigator_invoke.h>
 
-#include "public/BBInvoke.h"
+#include "public/BlackBerryInvoke.h"
 
 void invoke(const char *action, const char *data,
 		const char *file_transfer_mode, const char *id, const int list_id,
@@ -35,50 +35,17 @@ void invoke(const char *action, const char *data,
 	navigator_invoke_invocation_t *iRequest = 0;
 	navigator_invoke_invocation_create(&iRequest);
 
-	if (action != 0) {
-		navigator_invoke_invocation_set_action(iRequest, action);
-	}
-
-	if (data != 0) {
-		navigator_invoke_invocation_set_data(iRequest, data, strlen(data));
-	}
-
-	if (id != 0) {
-		navigator_invoke_invocation_set_id(iRequest, id);
-	}
-
-	if (list_id != 0) {
-		navigator_invoke_invocation_set_list_id(iRequest, list_id);
-	}
-
-	if (metadata != 0) {
-		navigator_invoke_invocation_set_metadata(iRequest, metadata);
-	}
-
-	if (source != 0) {
-		navigator_invoke_invocation_set_source(iRequest, source);
-	}
-
-	if (target != 0) {
-		navigator_invoke_invocation_set_target(iRequest, target);
-	}
-
-	if (target_type_mask != 0) {
-		navigator_invoke_invocation_set_target_type_mask(iRequest,
-				target_type_mask);
-	}
-
-	if (type != 0) {
-		navigator_invoke_invocation_set_type(iRequest, type);
-	}
-
-	if (uri != 0) {
-		navigator_invoke_invocation_set_uri(iRequest, uri);
-	}
-
-	/*
-	 if (action != 0) { navigator_invoke_invocation_set_file_transfer_mode(iRequest, action); }
-	 */
+	if (action != 0)			{ navigator_invoke_invocation_set_action(iRequest, action); }
+	if (data != 0)				{ navigator_invoke_invocation_set_data(iRequest, data, strlen(data)); }
+	if (id != 0)				{ navigator_invoke_invocation_set_id(iRequest, id); }
+	if (list_id != 0)			{ navigator_invoke_invocation_set_list_id(iRequest, list_id); }
+	if (metadata != 0)			{ navigator_invoke_invocation_set_metadata(iRequest, metadata); }
+	if (source != 0) 			{ navigator_invoke_invocation_set_source(iRequest, source); }
+	if (target != 0) 			{ navigator_invoke_invocation_set_target(iRequest, target); }
+	if (target_type_mask != 0)	{ navigator_invoke_invocation_set_target_type_mask(iRequest, target_type_mask); }
+	if (type != 0)				{ navigator_invoke_invocation_set_type(iRequest, type); }
+	if (uri != 0)				{ navigator_invoke_invocation_set_uri(iRequest, uri); }
+	// if (action != 0)			{ navigator_invoke_invocation_set_file_transfer_mode(iRequest, action); }
 
 	navigator_invoke_invocation_send(iRequest);
 	navigator_invoke_invocation_destroy(iRequest);
