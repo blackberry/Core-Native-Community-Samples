@@ -20,3 +20,17 @@ Samples Catalog (http://blackberry.github.com/samples)
 For more information about Native development, visit:
 The Native microsite (http://developer.blackberry.com/native)
 
+
+### Build with cmake
+
+Load environment variables
+
+    export tmp_pwd=`pwd`
+    cd /Applications/Momentics.app && source bbndk-* && cd $tmp_pwd
+    unset tmp_pwd
+
+Run `cmake` command
+
+    mkdir Device-Debug
+    cmake -DCMAKE_TOOLCHAIN_FILE="./cmake/Toolchain-QNX-8.0.0.cmake" .
+    make`
