@@ -8,7 +8,7 @@
 
     <!-- A universally unique application identifier. Must be unique across all BlackBerry applications.
          Using a reverse DNS-style name as the id is recommended. (Eg. com.example.ExampleApplication.) Required. -->
-    <id>com.BGmot.RotateText</id>
+    <id>com.example.RotateText</id>
 
     <!-- The name that is displayed in the BlackBerry application installer. 
          May have multiple values for each language. See samples or xsd schema file. Optional. -->
@@ -28,8 +28,7 @@
     <description>The RotateText application</description>
 
     <!--  Name of author which is used for signing. Must match the developer name of your development certificate. -->
-    <author>BGmot Inc.</author>
-    <platformVersion>10.0.9.2318</platformVersion>
+    <author>Example Inc.</author>
     
     <!--  Unique author ID assigned by signing authority. Required if using debug tokens. -->
     <!-- <authorId>ABC1234YjsnUk235h</authorId> -->
