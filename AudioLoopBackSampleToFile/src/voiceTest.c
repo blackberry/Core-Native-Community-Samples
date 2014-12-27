@@ -652,7 +652,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        cli_print("No input file specified. Please provide an input WAV file with the -i option.");
+        cli_print("No input file specified. Please provide an input WAV file with the -d option.");
         return -1;
     }
     cli_print("rate: %d channels: %d", samplerate, channels);
