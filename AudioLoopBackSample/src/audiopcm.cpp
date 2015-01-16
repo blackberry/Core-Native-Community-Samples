@@ -87,7 +87,7 @@ static int capture(circular_buffer_t* circular_buffer);
 static int play(circular_buffer_t* circular_buffer);
 static void capturesetup();
 static void playsetup();
-void toggleSpeaker(bool enable);
+int toggleSpeaker(bool enable);
 
 /**
  * Encapsulation of a circular buffer
@@ -249,7 +249,7 @@ void stopPcmAudio() {
 	fprintf(stderr,"StopPCMAudio ****************: EXIT\n");
 }
 
-void toggleSpeaker(bool enable) {
+int toggleSpeaker(bool enable) {
 	fprintf(stderr,"toggleSpeaker ****************: ENTER = %d\n", enable);
 	int ret;
 	if (enable == true) {
@@ -259,6 +259,7 @@ void toggleSpeaker(bool enable) {
 	}
 
 	fprintf(stderr,"toggleSpeaker ****************: EXIT\n");
+	return ret;
 }
 
 void toggleMute(bool enable) {

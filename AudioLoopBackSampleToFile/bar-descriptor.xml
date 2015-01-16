@@ -41,31 +41,31 @@
     <!--  The category where the application appears. Either core.games or core.media. -->
     <category>core.games</category>
     <asset path="icon.png">icon.png</asset>
-    <configuration id="com.qnx.qcc.configuration.exe.debug.67501989" name="Device-Debug">
+    <configuration name="Device-Debug">
        <platformArchitecture>armle-v7</platformArchitecture>
        <asset path="Device-Debug/AudioLoopBackSampleToFile" entry="true" type="Qnx/Elf">AudioLoopBackSampleToFile</asset>
     </configuration>
-    <configuration id="com.qnx.qcc.configuration.exe.release.1929299683" name="Device-Release">
+    <configuration name="Device-Release">
        <platformArchitecture>armle-v7</platformArchitecture>
        <asset path="Device-Release/AudioLoopBackSampleToFile" entry="true" type="Qnx/Elf">AudioLoopBackSampleToFile</asset>
     </configuration>
-    <configuration id="com.qnx.qcc.configuration.exe.profile.801459244" name="Device-Profile">
+    <configuration name="Device-Profile">
        <platformArchitecture>armle-v7</platformArchitecture>
        <asset path="Device-Profile/AudioLoopBackSampleToFile" entry="true" type="Qnx/Elf">AudioLoopBackSampleToFile</asset>
     </configuration>
-    <configuration id="com.qnx.qcc.configuration.exe.profile.coverage.2069733355" name="Device-Coverage">
+    <configuration name="Device-Coverage">
        <platformArchitecture>armle-v7</platformArchitecture>
        <asset path="Device-Coverage/AudioLoopBackSampleToFile" entry="true" type="Qnx/Elf">AudioLoopBackSampleToFile</asset>
     </configuration>
-    <configuration id="com.qnx.qcc.configuration.exe.debug.1980668498" name="Simulator-Debug">
+    <configuration name="Simulator-Debug">
        <platformArchitecture>x86</platformArchitecture>
        <asset path="Simulator-Debug/AudioLoopBackSampleToFile" entry="true" type="Qnx/Elf">AudioLoopBackSampleToFile</asset>
     </configuration>
-    <configuration id="com.qnx.qcc.configuration.exe.profile.1257635446" name="Simulator-Profile">
+    <configuration name="Simulator-Profile">
        <platformArchitecture>x86</platformArchitecture>
        <asset path="Simulator-Profile/AudioLoopBackSampleToFile" entry="true" type="Qnx/Elf">AudioLoopBackSampleToFile</asset>
     </configuration>
-    <configuration id="com.qnx.qcc.configuration.exe.profile.coverage.1655487923" name="Simulator-Coverage">
+    <configuration name="Simulator-Coverage">
        <platformArchitecture>x86</platformArchitecture>
        <asset path="Simulator-Coverage/AudioLoopBackSampleToFile" entry="true" type="Qnx/Elf">AudioLoopBackSampleToFile</asset>
     </configuration>
@@ -99,5 +99,9 @@
 
     <!-- Ensure that shared libraries in the package are found at run-time. -->
     <env var="LD_LIBRARY_PATH" value="app/native/lib"/>
-    
+
+    <arg>-d</arg>
+    <arg>/accounts/1000/shared/downloads/InputName.wav</arg>
+    <arg>-o</arg>
+    <arg>/accounts/1000/shared/downloads/Outputname.wav</arg>
 </qnx>

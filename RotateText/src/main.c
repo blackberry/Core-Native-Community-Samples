@@ -49,7 +49,7 @@ int initialize() {
     //15 fits into the bubble texture.
     int point_size16 = (int)(16.0f / ((float)dpi / 170.0f ));
 
-    fontBold16 = bbutil_load_font("/usr/fonts/font_repository/dejavu-ttf-2.17/DejaVuSans-Bold.ttf", point_size16, dpi);
+    fontBold16 = bbutil_load_font("/usr/fonts/font_repository/dejavu/DejaVuSans-Bold.ttf", point_size16, dpi);
     if (!fontBold16) {
         return EXIT_FAILURE;
     }

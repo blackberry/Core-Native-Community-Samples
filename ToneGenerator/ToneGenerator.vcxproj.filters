@@ -1,0 +1,52 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Assets">
+      <UniqueIdentifier>{195c69eb-25cd-42d3-bd0a-fa066afec4bb}</UniqueIdentifier>
+      <Extensions>qml;js;qmljs;jpg;png;gif;bmp;ico;amd;wav;mp3;mp4</Extensions>
+    </Filter>
+    <Filter Include="Config Files">
+      <UniqueIdentifier>{9916e1bd-99ba-44cf-ba07-a3ef62a83a01}</UniqueIdentifier>
+      <Extensions>pri;pro;mk;properties;project;cproject;xml;xsd;bat;cmd;ps;ps1</Extensions>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{417a5de1-165c-4090-b863-5d5e1223edf5}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;asm;h;hpp;hxx;hm;def;inl;inc</Extensions>
+    </Filter>
+    <Filter Include="Translations">
+      <UniqueIdentifier>{d843ce0c-f062-4bfa-98f5-f776a976b80f}</UniqueIdentifier>
+      <Extensions>ts;qm</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".DS_Store" />
+    <None Include="bar-descriptor.xml">
+      <Filter>Config Files</Filter>
+    </None>
+    <None Include="icon.png">
+      <Filter>Assets</Filter>
+    </None>
+    <None Include="LICENSE" />
+    <None Include="NOTICE" />
+    <None Include="README.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\audiopcm.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\bbutil.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\main.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\audiopcm.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\bbutil.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
