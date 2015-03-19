@@ -88,7 +88,7 @@ void process_bbm_registration_event(const bbmsp_access_error_codes_t status)
     // TODO:  YOU MUST CHANGE THIS UUID!
     // Change this when creating your own application.
     // You can generate one here: http://www.guidgenerator.com/
-    //const char* const UUID = "";
+    const char* const UUID = ;
 
     if (bbmsp_register(UUID)) {
       // Registration started. The user will see a dialog informing them that

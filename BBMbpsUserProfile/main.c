@@ -20,6 +20,7 @@
 #include <bps/event.h>
 #include <bbmsp/bbmsp_events.h>
 #include <bbmsp/bbmsp.h>
+#include <screen/screen.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -80,6 +81,11 @@ void handle_events() {
 }
 
 int main(int argc, char *argv[]) {
+
+  screen_window_t    screen_window = 0;
+  static const char *window_group_name = "mainwindowgroup";
+  screen_create_window_group(screen_window, window_group_name);
+
   // Initialize BPS library
   fprintf(stdout, "Initializing BPS: %d\n", bps_initialize());
   // Now we are ready to connect to BBM.

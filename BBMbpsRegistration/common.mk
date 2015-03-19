@@ -41,7 +41,7 @@ LDFLAGS+=-Wl,-z,relro -Wl,-z,now $(if $(filter g so shared,$(VARIANTS)),,-pie)
 
 include $(MKFILES_ROOT)/qtargets.mk
 
-LIBS+=bps bbmsp QtCore cpp
+LIBS+=bps bbmsp QtCore cpp screen
 
 OPTIMIZE_TYPE_g=none
 OPTIMIZE_TYPE=$(OPTIMIZE_TYPE_$(filter g, $(VARIANTS)))

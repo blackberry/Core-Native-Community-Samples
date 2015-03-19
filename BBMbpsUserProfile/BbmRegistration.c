@@ -121,8 +121,8 @@ int get_bbm_registration_progress()
 void bbm_registration_finished()
 {
   if (bbmsp_is_access_allowed()) {
-	  write_user_profile_data();
-//	  read_user_profile_data();
+//	  write_user_profile_data();
+	  read_user_profile_data();
   } else {
     // Insert your code here.
   }
